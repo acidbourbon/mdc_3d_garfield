@@ -5,6 +5,8 @@
 !act meta
 
 &CELL
+periodicity x = 1.0
+periodicity z = 0.5
 solids
 wire  centre 0. -0.9 0. ...
       direction 1 0 0 ...
@@ -135,6 +137,13 @@ area -6 -6 -2 6 6 9 ...
 Call plot_field_area
 Call plot_end
 
+// "coil" contour plot
+area -0.5 -0.5 -0.5 0.5 0.5 0.5 ...
+    view y=0 cut rot 90
+grid 25
+pl cont
+
+
 // Vector plot
 area -0.5 -0.5 -0.5 0.5 0.5 0.5 ...
     view x=0 cut rot 90
@@ -150,6 +159,12 @@ pl cont
 // Contour plot between cathodes
 area -0.5 -0.5 -0.5 0.5 0.5 0.5 ...
     view x=0 cut rot 90
+grid 50
+pl cont
+
+// Contour plot along sense wire
+area -0.5 -0.5 -0.02 0.5 0.5 0.02 ...
+    view y=0 cut rot 90
 grid 50
 pl cont
 
