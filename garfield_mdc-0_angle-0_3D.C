@@ -117,6 +117,7 @@ heed argon 70. carbon-dioxide 30.
 &drift
 SEL s
 area -0.40 -0.40 -0.40 0.40 0.40 0.40 view y=0 rot 180 3d
+xt-plot
 
 *****************SIGNAL*********************
 &signal
@@ -144,6 +145,8 @@ TIME-WINDOW 0.0 0.001 1000
 ****************Loop over signal************
 For i From 1 To 1  Do
 SIGNAL AVALANCHE NOELECTRON-PULSE ION-TAIL RUNGE-KUTTA-DRIFT-LINES
+PLOT-SIGNALS
+WIRES S
 *WRITE-SIGNALS DATASET "garfield_mdc-0_angle-0.txt" REMARK "p {j} n {i}" UNITS NANO-SECOND
 enddo
 ****************End Loop over signal*********
