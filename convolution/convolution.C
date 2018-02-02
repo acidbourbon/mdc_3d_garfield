@@ -3,8 +3,68 @@
 #include "TVirtualFFT.h"
 
 
-void fftconvolve(TH1D* h1, TH1D* h2, TH1D* h_out){
+TH1* fftconvolve(TH1D* h1, TH1D* h2){
   
+  
+  Int_t samples = h1->GetEntries();
+  
+  TVirtualFFT *fft_h1 = TVirtualFFT::FFT(1, &samples, "R2C M K");
+  fft_h1->SetPoints(h1->GetArray());
+  fft_h1->Transform();
+  
+  TVirtualFFT *fft_h2 = TVirtualFFT::FFT(1, &samples, "R2C M K");
+  fft_h2->SetPoints(h2->GetArray());
+  fft_h2->Transform();
+  
+  
+ /* 
+  new TCanvas();
+  TH1 *hr = 0;
+  hr = TH1::TransformHisto(fft_h1, hr, "RE");
+  hr->SetTitle("Real part of the tranfsorm");
+  hr->Draw();
+  
+  new TCanvas();
+  TH1 *him = 0;
+  him = TH1::TransformHisto(fft_h1, him, "IM");
+  him->SetTitle("Im. part of the  transform");
+  him->Draw();
+  */
+ 
+ 
+  Double_t *re_h1 = new Double_t[samples];
+  Double_t *im_h1 = new Double_t[samples];
+  fft_h1->GetPointsComplex(re_h1,im_h1);
+  
+  Double_t *re_h2 = new Double_t[samples];
+  Double_t *im_h2 = new Double_t[samples];
+  fft_h2->GetPointsComplex(re_h2,im_h2);
+ 
+  
+  Double_t *re_conv = new Double_t[samples];
+  Double_t *im_conv = new Double_t[samples];
+ 
+  for (Int_t i = 0; i<samples; i++){
+    // complex multiplication ... element wise
+    re_conv[i] = re_h1[i]*re_h2[i] - im_h1[i]*im_h2[i];
+    im_conv[i] = im_h1[i]*re_h2[i] + re_h1[i]*im_h2[i];
+  }
+  
+  TVirtualFFT *fft_back = TVirtualFFT::FFT(1, &samples, "C2R M K");
+  fft_back->SetPointsComplex(re_conv,im_conv);
+  fft_back->Transform();
+  
+  TH1 *hback = 0;
+  hback = TH1::TransformHisto(fft_back,hback, "RE");
+  hback->GetXaxis()->SetLimits(
+    h1->GetXaxis()->GetXmin(),
+    h1->GetXaxis()->GetXmax()
+  );
+  delete fft_h1;
+  delete fft_h2;
+  delete fft_back;
+  
+  return hback;
 }
 
 
@@ -53,54 +113,12 @@ void convolution(void) {
   new TCanvas();
   th_kern->Draw();
    
-  TVirtualFFT *fft_kern = TVirtualFFT::FFT(1, &samples, "R2C M K");
-  fft_kern->SetPoints(th_kern->GetArray());
-  fft_kern->Transform();
   
-  TVirtualFFT *fft_esig = TVirtualFFT::FFT(1, &samples, "R2C M K");
-  fft_esig->SetPoints(th_esig->GetArray());
-  fft_esig->Transform();
-
+  TH1* th_conv = fftconvolve(th_kern,th_esig);
   
   new TCanvas();
-  TH1 *hr = 0;
-  hr = TH1::TransformHisto(fft_kern, hr, "RE");
-  hr->SetTitle("Real part of the tranfsorm");
-  hr->Draw();
+  th_conv->Draw();
   
-  new TCanvas();
-  TH1 *him = 0;
-  him = TH1::TransformHisto(fft_kern, him, "IM");
-  him->SetTitle("Im. part of the  transform");
-  him->Draw();
-  
-  Double_t *re_kern = new Double_t[samples];
-  Double_t *im_kern = new Double_t[samples];
-  fft_kern->GetPointsComplex(re_kern,im_kern);
-  
-  Double_t *re_esig = new Double_t[samples];
-  Double_t *im_esig = new Double_t[samples];
-  fft_esig->GetPointsComplex(re_esig,im_esig);
- 
-  
-  Double_t *re_conv = new Double_t[samples];
-  Double_t *im_conv = new Double_t[samples];
- 
-  for (Int_t i = 0; i<samples; i++){
-    // complex multiplication ... element wise
-    re_conv[i] = re_kern[i]*re_esig[i] - im_kern[i]*im_esig[i];
-    im_conv[i] = im_kern[i]*re_esig[i] + re_kern[i]*im_esig[i];
-  }
-  
-  TVirtualFFT *fft_back = TVirtualFFT::FFT(1, &samples, "C2R M K");
-  fft_back->SetPointsComplex(re_conv,im_conv);
-  fft_back->Transform();
-  
-  new TCanvas();
-  TH1 *hback = 0;
-  hback = TH1::TransformHisto(fft_back,hback, "RE");
-  hback->GetXaxis()->SetLimits(0,sample_width);
-  hback->Draw();
   
 //   TH1 *hr = 0;
 //   hr = TH1::TransformHisto(fft_kern, hr, "RE");
