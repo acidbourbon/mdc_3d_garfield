@@ -8,8 +8,8 @@ plot_out=graphics_out/mdc_$(./run_counter.sh).ps
   rm ./tracks/*
 
 cell_generator=./MDC_cells/gen_MDC_I_1600V_3x3x3.py
-# gas_def=./gasses/ar70_co230.txt
-gas_def=./gasses/ar86_co214.txt
+gas_def=./gasses/ar70_co230.txt
+# gas_def=./gasses/ar86_co214.txt
 
 
 # animation=true
@@ -24,8 +24,8 @@ gas_def=./gasses/ar86_co214.txt
 # view_inner_cube=true
 # drift_point_charge=true
 # drift_MIPS_vcurve=true
-# drift_MIPS_track=true
-drift_cosmics=true
+drift_MIPS_track=true
+# drift_cosmics=true
 
 cat garfinit.txt >> $temp
 
@@ -192,7 +192,7 @@ for i in $(seq 1 $n); do
 cat <<EOF >>$temp
 
 area -0.40 -0.40 -0.40 0.40 0.40 0.40 view x=0 3d
-track $x $y -$halflength  $x $y $halflength HEED electron energy  0.70 GeV
+track $x $y -$halflength  $x $y $halflength HEED proton energy 1.93 GeV
 INTEGRATION-PARAMETERS  MONTE-CARLO-COLLISIONS 500
 DRIFT TRACK MONTE-CARLO-DRIFT LINE-PRINT
 
@@ -236,7 +236,7 @@ fi
 
 export LD_LIBRARY_PATH="./"
 ./garfield-9 < $temp | tee garfield_stdout.txt
-# ps2pdf $plot_out
+ps2pdf $plot_out
 # convert $plot_out -alpha off -delay 400 $plot_out.gif
 
 if [ $root_drift_times ]; then
@@ -256,7 +256,7 @@ if [ $animation == "true" ]; then
   rm $plot_out
   xdg-open $plot_out.gif
 else 
-#   rm $plot_out
-#   gv $( echo $plot_out | sed s/.ps/.pdf/ )
+  rm $plot_out
+  gv $( echo $plot_out | sed s/.ps/.pdf/ )
 fi
 

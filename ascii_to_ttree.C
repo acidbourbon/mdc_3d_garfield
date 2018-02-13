@@ -1,4 +1,26 @@
 
+#include "TH1.h"
+#include "TArray.h"
+
+// for compatibility for analysis scripts from 2016 ...
+void hist_to_tarrayf(TH1* hist, TArrayF* xarr, TArrayF* yarr){
+  
+  Float_t x,y;
+  
+  for (Int_t i = 1 ; i <= hist->GetEntries(); i++){
+  
+    x = hist->GetXaxis()->GetBinCenter(i);
+    y = hist->GetBinContent(i);
+    xarr->AddAt(x,i-1);
+    yarr->AddAt(y,i-1);
+  
+  }
+  xarr->Set(hist->GetEntries());
+  yarr->Set(hist->GetEntries());
+
+  
+}
+
 TH1* fftconvolve(TH1D* h1, TH1D* h2){
   
   
@@ -54,7 +76,7 @@ TH1* fftconvolve(TH1D* h1, TH1D* h2){
 
 void ascii_to_ttree(TString infile) {
   
-  Bool_t draw_pulses = false;
+  Bool_t draw_pulses = true;
   
   TFile* f_out = new TFile("f_out.root","RECREATE");
   
@@ -65,9 +87,11 @@ void ascii_to_ttree(TString infile) {
   new TCanvas();
   garfield_tree->Draw("t_drift >> tdrift_h()");
   new TCanvas();
-  garfield_tree->Draw("t_drift:x >> tdrift_vs_x()","","colz");
+//   garfield_tree->Draw("t_drift:x >> tdrift_vs_x()","","colz");
+  garfield_tree->Draw("t_drift:x >> tdrift_vs_x(100,-0.3,0.3,100,-0.02,0.1)","","colz");
   new TCanvas();
-  garfield_tree->Draw("t_drift:z >> tdrift_vs_z()","","colz");
+//   garfield_tree->Draw("t_drift:z >> tdrift_vs_z()","","colz");
+  garfield_tree->Draw("t_drift:z >> tdrift_vs_z(100,-0.3,0.3,100,-0.02,0.1)","","colz");
 //   new TBrowser();
   new TCanvas();
 //   garfield_tree->Draw("t_drift:y >> tdrift_vs_y()","","colz");
@@ -79,7 +103,10 @@ void ascii_to_ttree(TString infile) {
   
   TGraph* tg_kern = new TGraph("chamber_IR.csv","%lg, %lg");
   
-  Float_t IR_y_scaler = 1./230.;
+//   Float_t IR_y_scaler = 1./230./100.;
+//   Float_t IR_y_scaler = 1./230; // divide through the number of charges of one Fe55 pulse
+  Float_t IR_y_scaler = 1./100; // divide through the number of charges of one Fe55 pulse
+//   Float_t IR_y_scaler = 1.;
   
   Float_t sample_width = 1.6e-6;
   Int_t samples = 3200;
@@ -90,13 +117,46 @@ void ascii_to_ttree(TString infile) {
     Float_t t = sample_width * (Float_t) i /(Float_t) samples;
     th_kern->SetBinContent(i,tg_kern->Eval(t-0.1e-6)*IR_y_scaler);
   }
+  new TCanvas();
+  tg_kern->Draw();
+  
+  new TCanvas();
+  th_kern->Draw();
+  
+  // tree output compatible with earlier analysis scripts ... a bit bulky
+  
+  
+  TH1D* th_fake_pmt = new TH1D("th_fake_pmt","th_fake_pmt;t(ns)",samples,0,sample_width);
+  
+  for( Int_t i = 1; i <= samples; i++) {
+    Float_t t = sample_width * (Float_t) i /(Float_t) samples;
+    th_fake_pmt->SetBinContent(i,tg_kern->Eval(t-0.1e-6)*600);
+  }
+  
+  TTree* pulse_mem = new TTree("pulse_mem","Acquired single pulse samples");
+ 
+  TArrayF* signal_xarr = new TArrayF(samples);
+  TArrayF* signal_yarr = new TArrayF(samples);
+  pulse_mem->Branch("signal_x",signal_xarr);
+  pulse_mem->Branch("signal_y",signal_yarr);
+  TArrayF* trigger_yarr = new TArrayF(samples);
+  TArrayF* trigger_xarr = new TArrayF(samples);
+  
+  hist_to_tarrayf(th_fake_pmt,trigger_xarr,trigger_yarr);
+  pulse_mem->Branch("trigger_x",trigger_xarr);
+  pulse_mem->Branch("trigger_y",trigger_yarr);
+  
+  
   
   
   // process the garfield tracks
   
   TH1D* th_esig = new TH1D("th_esig","th_esig;t(s)",samples,0,sample_width);
   
+  
   TH1* th_conv = 0;
+  
+  Float_t weight = 1./((Float_t) samples ); // somehow I need that factor, so the convolution preserves the absolute Y values, because electron signals are no dirac peaks
   
   Float_t t_drift;
   Float_t n;
@@ -105,10 +165,12 @@ void ascii_to_ttree(TString infile) {
   garfield_tree->SetBranchAddress("n",&n);
  
   new TCanvas();
+//   th_kern->Draw();
   
-  Int_t tracks = garfield_tree->GetEntries();
-  for (Int_t i = 0 ; i < tracks + 1; i++){
-    if(i < tracks){
+  Int_t primaries = garfield_tree->GetEntries();
+//   primaries = 1;
+  for (Int_t i = 0 ; i < primaries + 1; i++){
+    if(i < primaries){
       garfield_tree->GetEntry(i);
     } else {
       n++; // to trigger last processing
@@ -118,13 +180,14 @@ void ascii_to_ttree(TString infile) {
     if (n > last_n){
 //       cout << "new N! " << endl;
 //       new TCanvas();
+      delete th_conv;
       th_conv = fftconvolve(th_kern,th_esig);
       
       th_conv->GetXaxis()->SetRangeUser(-0.1e-6,0.5e-6);
-      th_conv->GetYaxis()->SetRangeUser(-3.5,0.5);
+      th_conv->GetYaxis()->SetRangeUser(-2e-3,0.5e-3);
 //       th_esig->DrawClone();
       
-      if(draw_pulses){
+      if(draw_pulses && n < 100){
         if(last_n == 1){
           th_conv->DrawClone();
         } else {
@@ -132,14 +195,17 @@ void ascii_to_ttree(TString infile) {
         }
       }
       th_conv->SetName(Form("%d pulse",i));
-      th_conv->Write();
+//       th_conv->Write();
+      hist_to_tarrayf(th_conv,signal_xarr,signal_yarr);
+      pulse_mem->Fill();
       th_esig->Reset();
     }
     
-    th_esig->Fill(t_drift*1e-6);
+    th_esig->Fill(t_drift*1e-6,weight);
+//     th_esig->Fill(0.01*1e-6,weight);
     
     last_n = n;
   }
-  
+  pulse_mem->Write();
   
 }
