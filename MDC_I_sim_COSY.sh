@@ -1,6 +1,10 @@
 #!/bin/bash
 
 
+mkdir -p graphics_out
+mkdir -p tracks
+
+
 temp=$(mktemp)
 
 plot_out=graphics_out/mdc_$(./run_counter.sh).ps
