@@ -227,7 +227,7 @@ EOF
 #   TString displacement_x_str = "0.2",
 #   TString displacement_y_str = "1.0"
 # )
-root -l 'cosmic_generator/gen_cosmic_tracks.C("./tracks/input_tracks.txt","100000","0.6","0.1","0.7")' -q
+root -l 'track_generators/gen_cosmic_tracks.C("./tracks/input_tracks.txt","100000","0.6","0.1","0.7")' -q
 cat ./tracks/input_tracks.txt >> $temp
 
 fi
