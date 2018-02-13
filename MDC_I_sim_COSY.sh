@@ -11,7 +11,7 @@ plot_out=graphics_out/mdc_$(./run_counter.sh).ps
 
   rm ./tracks/*
 
-cell_generator=./MDC_cells/gen_MDC_I_1600V_3x3x3.py
+cell_generator=./MDC_cells/gen_MDC_I_1750V_3x3x3.py
 gas_def=./gasses/ar70_co230.txt
 # gas_def=./gasses/ar86_co214.txt
 
@@ -28,8 +28,8 @@ gas_def=./gasses/ar70_co230.txt
 # view_inner_cube=true
 # drift_point_charge=true
 # drift_MIPS_vcurve=true
-drift_MIPS_track=true
-# drift_cosmics=true
+# drift_MIPS_track=true
+drift_cosy_protons=true
 
 cat garfinit.txt >> $temp
 
@@ -205,7 +205,7 @@ done
 fi
 
 ###  simulate cosmics coming from above ####
-if [ $drift_cosmics == "true" ]; then 
+if [ $drift_cosy_protons == "true" ]; then 
 root_drift_times=true
 
 
@@ -227,7 +227,7 @@ EOF
 #   TString displacement_x_str = "0.2",
 #   TString displacement_y_str = "1.0"
 # )
-root -l 'track_generators/gen_cosmic_tracks.C("./tracks/input_tracks.txt","100000","0.6","0.1","0.7")' -q
+root -l 'track_generators/gen_cosy_tracks.C("./tracks/input_tracks.txt","500000","0.6","0.1","0.25")' -q
 cat ./tracks/input_tracks.txt >> $temp
 
 fi
@@ -240,11 +240,12 @@ fi
 
 export LD_LIBRARY_PATH="./"
 ./garfield-9 < $temp | tee garfield_stdout.txt
+rm $temp
 ps2pdf $plot_out
 # convert $plot_out -alpha off -delay 400 $plot_out.gif
 
 if [ $root_drift_times ]; then
-  csplit -f './tracks/' -b '%05d' garfield_stdout.txt "/^1 Track drift line plot :/" '{*}'
+  csplit -f './tracks/' -b '%06d' garfield_stdout.txt "/^1 Track drift line plot :/" '{*}'
   rm track_drift_line_data.txt
   here=$(pwd)
   cd tracks
@@ -253,7 +254,7 @@ if [ $root_drift_times ]; then
     grep -P "Hit S" $i |  perl -pi -e "s/unavailable.*//g" >> track_drift_line_data.txt
   done
   cd $here
-  xterm -e root -l 'ascii_to_ttree.C("tracks/track_drift_line_data.txt")' &
+#   xterm -e root -l 'ascii_to_ttree.C("tracks/track_drift_line_data.txt")' &
 fi
 
 if [ $animation == "true" ]; then
