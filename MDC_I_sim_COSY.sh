@@ -246,9 +246,9 @@ ps2pdf $plot_out
 
 if [ $root_drift_times ]; then
   csplit -f './tracks/' -b '%06d' garfield_stdout.txt "/^1 Track drift line plot :/" '{*}'
-  rm track_drift_line_data.txt
   here=$(pwd)
   cd tracks
+  rm track_drift_line_data.txt
   for i in *; do
     perl -pi -e "s/^/$i  /g" $i
     grep -P "Hit S" $i |  perl -pi -e "s/unavailable.*//g" >> track_drift_line_data.txt

@@ -31,11 +31,31 @@ Float_t y_min = -0.35;
 Float_t y_max = 0.35;
 Float_t z_min = -0.35;
 Float_t z_max = 0.35;
-  
+
+
+//http://pdg.lbl.gov/2011/reviews/rpp2011-rev-cosmic-rays.pdf
 
 // TF1* muon_rate_theta = new TF1("muon_rate","cos(x)*cos(x)",0,TMath::Pi()/2);
-TF1* muon_rate_theta = new TF1("muon_rate","cos(x)*cos(x)",0,TMath::TwoPi()*60/360); // limit at 60 deg
+// TF1* muon_rate_theta = new TF1("muon_rate","cos(x)*cos(x)",0,TMath::TwoPi()*60/360); // limit at 60 deg
+TF2 *muon_rate_theta_energy = new TF2("muon_rate_theta_energy",
+           "0.14*pow(y,-2.7)*( 1/(1+1.1*y*cos(x)/115.0) + 0.054/(1+1.1*y*cos(x)/850.0) )"
+           ,0,TMath::TwoPi()/4,0,1000);
+TF1 *muon_rate_energy = new TF1("muon_rate_theta_energy",
+           "0.14*pow(x,-2.7)*( 1/(1+1.1*x*cos(0)/115.0) + 0.054/(1+1.1*x*cos(0)/850.0) )"
+           ,0,100);
 
+gRandom->SetSeed(0);
+
+// muon_rate_theta_energy->Draw("surf");
+muon_rate_energy->Draw();
+
+Double_t theta,ekin;
+muon_rate_theta_energy->GetRandom2(theta,ekin);
+
+
+
+
+/*
 // new TCanvas();
 // muon_rate->Draw();
 
@@ -137,7 +157,7 @@ for (Int_t i = 0 ; i< number; i++){
 // 
 // new TCanvas();
 // theta_test->Draw();
-  
+  */
   
   
 }
