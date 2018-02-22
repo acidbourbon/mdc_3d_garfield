@@ -82,8 +82,31 @@ void ascii_to_ttree(TString infile) {
   
   TFile* f_out = new TFile("f_out.root","RECREATE");
   
-  TTree* garfield_tree = new TTree("garfield_tree", "garfield_tree");
-  garfield_tree->ReadFile(infile, "n:x:y:z:t_drift");
+  TFile* infile_root = new TFile(infile+".root");
+  
+  TTree* garfield_tree;
+  
+  if(infile_root->IsZombie()){ // does not exist yet
+    
+    garfield_tree = new TTree("garfield_tree", "garfield_tree");
+    
+    cout << "convert ascii data ..." << endl;
+    garfield_tree->ReadFile(infile, "n:x:y:z:t_drift");
+    cout << "done" << endl;
+    
+    TFile* tree_out = new TFile(infile+".root","RECREATE");
+    garfield_tree->Write();
+    tree_out->Close();
+    
+    
+  } else {
+    cout << "found already converted root tree in " << infile+".root" << endl;
+  }
+  
+  infile_root = new TFile(infile+".root");
+  garfield_tree = (TTree*) infile_root->Get("garfield_tree");
+  f_out->cd();
+  
 //   garfield_tree->Draw("Energy_1:Energy_2”, "”, "");
 //   garfield_tree->Draw("Energy_1”);
   new TCanvas();
