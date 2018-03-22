@@ -1,12 +1,6 @@
 #!/bin/bash
 
 
-
-mkdir -p graphics_out
-mkdir -p tracks
-
-
-
 temp=$(mktemp)
 
 plot_out=graphics_out/mdc_$(./run_counter.sh).ps
@@ -15,7 +9,9 @@ plot_out=graphics_out/mdc_$(./run_counter.sh).ps
 
 cell_generator=./MDC_cells/gen_MDC_I_1600V_3x3x3.py
 # gas_def=./gasses/ar70_co230.txt
-gas_def=./gasses/ar86_co214.txt
+# gas_def=./gasses/ar86_co214.txt
+gas_def=./gasses/ar82_co218.txt
+# gas_def=./gasses/ar80_co220.txt
 
 
 # animation=true
@@ -30,8 +26,8 @@ gas_def=./gasses/ar86_co214.txt
 # view_inner_cube=true
 # drift_point_charge=true
 # drift_MIPS_vcurve=true
-# drift_MIPS_track=true
-drift_cosmics=true
+drift_MIPS_track=true
+# drift_cosmics=true
 
 cat garfinit.txt >> $temp
 
@@ -198,7 +194,7 @@ for i in $(seq 1 $n); do
 cat <<EOF >>$temp
 
 area -0.40 -0.40 -0.40 0.40 0.40 0.40 view x=0 3d
-track $x $y -$halflength  $x $y $halflength HEED electron energy  0.70 GeV
+track $x $y -$halflength  $x $y $halflength HEED proton energy  2.7 GeV
 INTEGRATION-PARAMETERS  MONTE-CARLO-COLLISIONS 500
 DRIFT TRACK MONTE-CARLO-DRIFT LINE-PRINT
 
@@ -229,8 +225,6 @@ EOF
 #   TString displacement_x_str = "0.2",
 #   TString displacement_y_str = "1.0"
 # )
-
-#http://pdg.lbl.gov/2011/reviews/rpp2011-rev-cosmic-rays.pdf
 root -l 'track_generators/gen_cosmic_tracks.C("./tracks/input_tracks.txt","100000","0.6","0.1","0.7")' -q
 cat ./tracks/input_tracks.txt >> $temp
 
@@ -244,29 +238,27 @@ fi
 
 export LD_LIBRARY_PATH="./"
 ./garfield-9 < $temp | tee garfield_stdout.txt
-# ps2pdf $plot_out
+ps2pdf $plot_out
 # convert $plot_out -alpha off -delay 400 $plot_out.gif
 
 if [ $root_drift_times ]; then
-  csplit -f './tracks/' -b '%06d' garfield_stdout.txt "/^1 Track drift line plot :/" '{*}'
+  csplit -f './tracks/' -b '%05d' garfield_stdout.txt "/^1 Track drift line plot :/" '{*}'
+  rm track_drift_line_data.txt
   here=$(pwd)
   cd tracks
-  rm track_drift_line_data.txt
   for i in *; do
     perl -pi -e "s/^/$i  /g" $i
     grep -P "Hit S" $i |  perl -pi -e "s/unavailable.*//g" >> track_drift_line_data.txt
   done
   cd $here
-  xterm -e root -l 'ascii_to_ttree_convolve.C("tracks/track_drift_line_data.txt")' &
-  # work on the simulated Sandra cosmics
-  # root -l 'ascii_to_ttree_convolve.C("2018-02-02_16:37:26_ca20000_cosmics_raw/track_drift_line_data.txt")'
+  xterm -e root -l 'ascii_to_ttree.C("tracks/track_drift_line_data.txt")' &
 fi
 
 if [ $animation == "true" ]; then
   rm $plot_out
   xdg-open $plot_out.gif
 else 
-#   rm $plot_out
-#   gv $( echo $plot_out | sed s/.ps/.pdf/ )
+  rm $plot_out
+  gv $( echo $plot_out | sed s/.ps/.pdf/ )
 fi
 

@@ -74,7 +74,7 @@ TH1* fftconvolve(TH1D* h1, TH1D* h2){
 
 
 
-void ascii_to_ttree(TString infile) {
+void ascii_to_ttree_convolve(TString infile) {
   
   Bool_t draw_pulses = true;
   
@@ -101,11 +101,11 @@ void ascii_to_ttree(TString infile) {
   
   /// load the kernel/chamber_IR function
   
-  TGraph* tg_kern = new TGraph("chamber_IR.csv","%lg, %lg");
+  TGraph* tg_kern = new TGraph("chamber_IR.csv","%lg %lg");
   
 //   Float_t IR_y_scaler = 1./230./100.;
-//   Float_t IR_y_scaler = 1./230; // divide through the number of charges of one Fe55 pulse
-  Float_t IR_y_scaler = 1./100; // divide through the number of charges of one Fe55 pulse
+  Float_t IR_y_scaler = 1./230; // divide through the number of charges of one Fe55 pulse
+//   Float_t IR_y_scaler = 1./2; // divide through the number of charges of one Fe55 pulse
 //   Float_t IR_y_scaler = 1.;
   
   Float_t sample_width = 1.6e-6;
@@ -115,7 +115,8 @@ void ascii_to_ttree(TString infile) {
   
   for( Int_t i = 1; i <= samples; i++) {
     Float_t t = sample_width * (Float_t) i /(Float_t) samples;
-    th_kern->SetBinContent(i,tg_kern->Eval(t-0.1e-6)*IR_y_scaler);
+//     th_kern->SetBinContent(i,tg_kern->Eval(t-0.1e-6)*IR_y_scaler);
+    th_kern->SetBinContent(i,tg_kern->Eval(t)*IR_y_scaler);
   }
   new TCanvas();
   tg_kern->Draw();
@@ -130,7 +131,7 @@ void ascii_to_ttree(TString infile) {
   
   for( Int_t i = 1; i <= samples; i++) {
     Float_t t = sample_width * (Float_t) i /(Float_t) samples;
-    th_fake_pmt->SetBinContent(i,tg_kern->Eval(t-0.1e-6)*600);
+    th_fake_pmt->SetBinContent(i,tg_kern->Eval(t)*600);
   }
   
   TTree* pulse_mem = new TTree("pulse_mem","Acquired single pulse samples");
