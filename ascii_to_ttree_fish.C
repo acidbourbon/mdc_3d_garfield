@@ -80,6 +80,9 @@ void ascii_to_ttree_fish(TString infile) {
   
   Bool_t draw_pulses = true;
   
+  // for fish
+  Int_t nth_electron = 2;
+  
   TFile* f_out = new TFile("f_out.root","RECREATE");
   
   TFile* infile_root = new TFile(infile+".root");
@@ -245,6 +248,9 @@ void ascii_to_ttree_fish(TString infile) {
   fish_tree->Branch("t_drift_a",&t_drift_a);
   fish_tree->Branch("t_drift_b",&t_drift_b);
   
+  std::vector<Float_t> t_drift_a_vec;
+  std::vector<Float_t> t_drift_b_vec;
+  
   Int_t primaries = garfield_tree->GetEntries();
 //   primaries = 1;
   for (Int_t i = 0 ; i < primaries + 1; i++){
@@ -256,13 +262,9 @@ void ascii_to_ttree_fish(TString infile) {
     }
     
     if (wire == 1){
-      if (t_drift*1000 < t_drift_a){
-        t_drift_a = t_drift*1000;
-      }
+      t_drift_a_vec.push_back(t_drift*1000);
     } else if (wire == 2){
-      if (t_drift*1000 < t_drift_b){
-        t_drift_b = t_drift*1000;
-      }
+      t_drift_b_vec.push_back(t_drift*1000);
     }
     
     
@@ -278,9 +280,19 @@ void ascii_to_ttree_fish(TString infile) {
       th_conv->GetYaxis()->SetRangeUser(-2e-3,0.5e-3); */
 //       th_esig->DrawClone();
 
-      fish_tree->Fill();
       t_drift_a = 1000;
       t_drift_b = 1000;
+      std::sort(t_drift_a_vec.begin(),t_drift_a_vec.end());
+      std::sort(t_drift_b_vec.begin(),t_drift_b_vec.end());
+      if(t_drift_a_vec.size() > nth_electron){
+        t_drift_a = t_drift_a_vec[nth_electron];
+      }
+      if(t_drift_b_vec.size() > nth_electron){
+        t_drift_b = t_drift_b_vec[nth_electron];
+      }
+      fish_tree->Fill();
+      t_drift_a_vec.clear();
+      t_drift_b_vec.clear();
       
       if(draw_pulses && n < 100){
         if(last_n == 1){
