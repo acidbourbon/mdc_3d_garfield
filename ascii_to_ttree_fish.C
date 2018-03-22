@@ -226,17 +226,24 @@ void ascii_to_ttree_fish(TString infile) {
   Float_t t_drift_second;
   Float_t t_drift_third;
   Float_t t_drift_fourth;
-  Float_t n,y,last_y,wire;
+  Float_t n,x,y,z,last_y,wire;
   Float_t last_n = 1;
   garfield_tree->SetBranchAddress("t_drift",&t_drift);
   garfield_tree->SetBranchAddress("n",&n);
+  garfield_tree->SetBranchAddress("x",&x);
   garfield_tree->SetBranchAddress("y",&y);
+  garfield_tree->SetBranchAddress("z",&z);
   garfield_tree->SetBranchAddress("wire",&wire);
  
-  new TCanvas();
+//   new TCanvas();
 //   th_kern->Draw();
-
- 
+  
+  
+  Float_t t_drift_a = 1000;
+  Float_t t_drift_b = 1000;
+  TTree* fish_tree = new TTree("fish_tree","fish_tree");
+  fish_tree->Branch("t_drift_a",&t_drift_a);
+  fish_tree->Branch("t_drift_b",&t_drift_b);
   
   Int_t primaries = garfield_tree->GetEntries();
 //   primaries = 1;
@@ -248,8 +255,15 @@ void ascii_to_ttree_fish(TString infile) {
       n++; // to trigger last processing
     }
     
-    if (wire != 1)
-      continue;
+    if (wire == 1){
+      if (t_drift*1000 < t_drift_a){
+        t_drift_a = t_drift*1000;
+      }
+    } else if (wire == 2){
+      if (t_drift*1000 < t_drift_b){
+        t_drift_b = t_drift*1000;
+      }
+    }
     
     
 //     cout << "n: " << n << endl;
@@ -263,6 +277,10 @@ void ascii_to_ttree_fish(TString infile) {
       th_conv->GetXaxis()->SetRangeUser(-0.1e-6,0.5e-6);
       th_conv->GetYaxis()->SetRangeUser(-2e-3,0.5e-3); */
 //       th_esig->DrawClone();
+
+      fish_tree->Fill();
+      t_drift_a = 1000;
+      t_drift_b = 1000;
       
       if(draw_pulses && n < 100){
         if(last_n == 1){
@@ -421,6 +439,12 @@ c_first_to_fourth->cd(3);
 th2_third_e->Draw("colz");
 c_first_to_fourth->cd(4);
 th2_fourth_e->Draw("colz");
+
+new TCanvas();
+// draw a fish
+fish_tree->Draw("(t_drift_b-t_drift_a):(t_drift_b+t_drift_a)>>fish(100,0,100,100,-100,100)","t_drift_b <1000","colz");
+
+
 
 
 // th2_first_e_0->Draw(); // draw the first fit parameter (constant, in this case)
