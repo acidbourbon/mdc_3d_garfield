@@ -81,7 +81,7 @@ void ascii_to_ttree_fish(TString infile) {
   Bool_t draw_pulses = true;
   
   // for fish
-  Int_t nth_electron = 2;
+  Int_t nth_electron = 0;
   
   TFile* f_out = new TFile("f_out.root","RECREATE");
   
