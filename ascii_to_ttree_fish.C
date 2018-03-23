@@ -290,6 +290,21 @@ void ascii_to_ttree_fish(TString infile) {
       if(t_drift_b_vec.size() > nth_electron){
         t_drift_b = t_drift_b_vec[nth_electron];
       }
+      
+      if(t_drift_a_vec.size() > 0){
+        th2_first_e->Fill(last_y*10.,t_drift_a_vec[0]);
+      }
+      if(t_drift_a_vec.size() > 1){
+        th2_second_e->Fill(last_y*10.,t_drift_a_vec[1]);
+      }
+      if(t_drift_a_vec.size() > 2){
+        th2_third_e->Fill(last_y*10.,t_drift_a_vec[2]);
+      }
+      if(t_drift_a_vec.size() > 3){
+        th2_fourth_e->Fill(last_y*10.,t_drift_a_vec[3]);
+      }
+      
+      
       fish_tree->Fill();
       t_drift_a_vec.clear();
       t_drift_b_vec.clear();
@@ -303,16 +318,8 @@ void ascii_to_ttree_fish(TString infile) {
 //           th_esig->DrawClone("same");
         }
       }
-      gROOT->cd();
-      th_esig_cum = th_esig->GetCumulative();
-      t_drift_first  = th_esig->GetXaxis()->GetBinCenter(  th_esig_cum->FindFirstBinAbove(0)  ) ;
-      t_drift_second = th_esig->GetXaxis()->GetBinCenter(  th_esig_cum->FindFirstBinAbove(1)  ) ;
-      t_drift_third  = th_esig->GetXaxis()->GetBinCenter(  th_esig_cum->FindFirstBinAbove(2)  ) ;
-      t_drift_fourth = th_esig->GetXaxis()->GetBinCenter(  th_esig_cum->FindFirstBinAbove(3)  ) ;
-      th2_first_e->Fill(last_y*10.,t_drift_first*1e9);
-      th2_second_e->Fill(last_y*10.,t_drift_second*1e9);
-      th2_third_e->Fill(last_y*10.,t_drift_third*1e9);
-      th2_fourth_e->Fill(last_y*10.,t_drift_fourth*1e9);
+//       gROOT->cd();
+//       th_esig_cum = th_esig->GetCumulative();
 //       th_conv->SetName(Form("%d pulse",i));
 // //       th_conv->Write();
 //       hist_to_tarrayf(th_conv,signal_xarr,signal_yarr);
