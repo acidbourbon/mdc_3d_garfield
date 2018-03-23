@@ -44,6 +44,8 @@ for y in np.arange(0,sim_vol_ysize/2.,ypitch*2) :
     print "      "+sense_conductor+" ..."
     if( y_bar == 0 and z == 0):
       print "      label S ..."
+    if( y_bar == ypitch and z == zpitch*2):
+      print "      label T ..."
     print "      voltage {:}".format(v_sense)
     if (y_bar > 0):
       print "wire  centre {:} {:} {:} ...".format(x,-y_bar,z)
