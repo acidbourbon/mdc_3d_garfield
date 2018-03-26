@@ -74,6 +74,7 @@ gRandom->SetSeed(0);
 
 for (Int_t i = 0 ; i< events; i++){
   outfile << "Say \"new UV event\"" << endl;
+  outfile << "Say \"laser position: "<< x << " " << y << " " << z << "\"" << endl;
   for (Int_t j = 0 ; j< charges; j++){
     
     Float_t charge_x = (charge_density_x->GetRandom()+x)/10.; // in cm  
