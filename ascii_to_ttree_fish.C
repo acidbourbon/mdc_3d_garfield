@@ -82,6 +82,7 @@ void ascii_to_ttree_fish(TString infile) {
   
   // for fish
   Int_t nth_electron = 0;
+  Int_t elno_max = 20;
   
   TFile* f_out = new TFile("f_out.root","RECREATE");
   
@@ -118,7 +119,7 @@ void ascii_to_ttree_fish(TString infile) {
 //   garfield_tree->Draw("t_drift:x >> tdrift_vs_x()","","colz");
   garfield_tree->Draw("t_drift*1000:x*10 >> tdrift_vs_x(602,-3,3,256,0,102.3)","","colz");
   TH2F* tdrift_vs_x = (TH2F*) f_out->Get("tdrift_vs_x");
-  tdrift_vs_x->GetXaxis()->SetTitle("z pos (mm)");
+  tdrift_vs_x->GetXaxis()->SetTitle("x pos (mm)");
   tdrift_vs_x->GetYaxis()->SetTitle("drift time (ns)");
   tdrift_vs_x->SetTitle("drift time vs x start position");
   tdrift_vs_x->Draw("colz");
@@ -244,9 +245,11 @@ void ascii_to_ttree_fish(TString infile) {
   
   Float_t t_drift_a = 1000;
   Float_t t_drift_b = 1000;
+  Int_t   elno = 0;
   TTree* fish_tree = new TTree("fish_tree","fish_tree");
   fish_tree->Branch("t_drift_a",&t_drift_a);
   fish_tree->Branch("t_drift_b",&t_drift_b);
+  fish_tree->Branch("elno",&elno);
   
   std::vector<Float_t> t_drift_a_vec;
   std::vector<Float_t> t_drift_b_vec;
@@ -284,11 +287,15 @@ void ascii_to_ttree_fish(TString infile) {
       t_drift_b = 1000;
       std::sort(t_drift_a_vec.begin(),t_drift_a_vec.end());
       std::sort(t_drift_b_vec.begin(),t_drift_b_vec.end());
-      if(t_drift_a_vec.size() > nth_electron){
-        t_drift_a = t_drift_a_vec[nth_electron];
-      }
-      if(t_drift_b_vec.size() > nth_electron){
-        t_drift_b = t_drift_b_vec[nth_electron];
+      
+      for(elno = 0; elno < elno_max; ++elno){
+        if(t_drift_a_vec.size() > elno){
+          t_drift_a = t_drift_a_vec[elno];
+        }
+        if(t_drift_b_vec.size() > elno){
+          t_drift_b = t_drift_b_vec[elno];
+        }
+        fish_tree->Fill();
       }
       
       if(t_drift_a_vec.size() > 0){
@@ -305,7 +312,6 @@ void ascii_to_ttree_fish(TString infile) {
       }
       
       
-      fish_tree->Fill();
       t_drift_a_vec.clear();
       t_drift_b_vec.clear();
       
@@ -459,9 +465,15 @@ th2_third_e->Draw("colz");
 c_first_to_fourth->cd(4);
 th2_fourth_e->Draw("colz");
 
-new TCanvas();
+TCanvas* fish_cavas = new TCanvas();
+fish_cavas->Divide(3,2);
 // draw a fish
-fish_tree->Draw("(t_drift_b-t_drift_a):(t_drift_b+t_drift_a)>>fish(100,0,100,100,-100,100)","t_drift_b <1000","colz");
+for (Int_t i = 0; i < 6; ++i){
+  fish_cavas->cd(i+1);
+  fish_tree->Draw(Form("(t_drift_b-t_drift_a):(t_drift_b+t_drift_a)>>fish%d(500,-200,300,200,-100,100)",i),
+                  Form("t_drift_b <1000 && elno == %d",i),"colz");
+  
+}
 
 
 

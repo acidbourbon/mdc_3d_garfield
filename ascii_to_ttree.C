@@ -80,6 +80,10 @@ void ascii_to_ttree(TString infile) {
   
   Bool_t draw_pulses = true;
   
+  // for fish
+  Int_t nth_electron = 0;
+  Int_t elno_max = 20;
+  
   TFile* f_out = new TFile("f_out.root","RECREATE");
   
   TFile* infile_root = new TFile(infile+".root");
@@ -91,7 +95,7 @@ void ascii_to_ttree(TString infile) {
     garfield_tree = new TTree("garfield_tree", "garfield_tree");
     
     cout << "convert ascii data ..." << endl;
-    garfield_tree->ReadFile(infile, "n:x:y:z:t_drift");
+    garfield_tree->ReadFile(infile, "n:x:y:z:t_drift:wire");
     cout << "done" << endl;
     
     TFile* tree_out = new TFile(infile+".root","RECREATE");
@@ -115,7 +119,7 @@ void ascii_to_ttree(TString infile) {
 //   garfield_tree->Draw("t_drift:x >> tdrift_vs_x()","","colz");
   garfield_tree->Draw("t_drift*1000:x*10 >> tdrift_vs_x(602,-3,3,256,0,102.3)","","colz");
   TH2F* tdrift_vs_x = (TH2F*) f_out->Get("tdrift_vs_x");
-  tdrift_vs_x->GetXaxis()->SetTitle("z pos (mm)");
+  tdrift_vs_x->GetXaxis()->SetTitle("x pos (mm)");
   tdrift_vs_x->GetYaxis()->SetTitle("drift time (ns)");
   tdrift_vs_x->SetTitle("drift time vs x start position");
   tdrift_vs_x->Draw("colz");
@@ -150,6 +154,7 @@ void ascii_to_ttree(TString infile) {
   tdrift_vs_y->GetYaxis()->SetTitle("drift time (ns)");
   tdrift_vs_y->SetTitle("drift time vs y start position");
   tdrift_vs_y->Draw("colz");
+  
   
   /*
   
@@ -226,25 +231,47 @@ void ascii_to_ttree(TString infile) {
   Float_t t_drift_second;
   Float_t t_drift_third;
   Float_t t_drift_fourth;
-  Float_t n,y,last_y;
+  Float_t n,x,y,z,last_y,wire;
   Float_t last_n = 1;
   garfield_tree->SetBranchAddress("t_drift",&t_drift);
   garfield_tree->SetBranchAddress("n",&n);
+  garfield_tree->SetBranchAddress("x",&x);
   garfield_tree->SetBranchAddress("y",&y);
+  garfield_tree->SetBranchAddress("z",&z);
+  garfield_tree->SetBranchAddress("wire",&wire);
  
-  new TCanvas();
+//   new TCanvas();
 //   th_kern->Draw();
-
- 
+  
+  
+  new TCanvas();
+  Float_t t_drift_a = 1000;
+  Float_t t_drift_b = 1000;
+  Int_t   elno = 0;
+  TTree* fish_tree = new TTree("fish_tree","fish_tree");
+  fish_tree->Branch("t_drift_a",&t_drift_a);
+  fish_tree->Branch("t_drift_b",&t_drift_b);
+  fish_tree->Branch("elno",&elno);
+  
+  std::vector<Float_t> t_drift_a_vec;
+  std::vector<Float_t> t_drift_b_vec;
   
   Int_t primaries = garfield_tree->GetEntries();
 //   primaries = 1;
   for (Int_t i = 0 ; i < primaries + 1; i++){
+    
     if(i < primaries){
       garfield_tree->GetEntry(i);
     } else {
       n++; // to trigger last processing
     }
+    
+    if (wire == 1){
+      t_drift_a_vec.push_back(t_drift*1000);
+    } else if (wire == 2){
+      t_drift_b_vec.push_back(t_drift*1000);
+    }
+    
     
 //     cout << "n: " << n << endl;
     if (n > last_n){
@@ -257,6 +284,38 @@ void ascii_to_ttree(TString infile) {
       th_conv->GetXaxis()->SetRangeUser(-0.1e-6,0.5e-6);
       th_conv->GetYaxis()->SetRangeUser(-2e-3,0.5e-3); */
 //       th_esig->DrawClone();
+
+      t_drift_a = 1000;
+      t_drift_b = 1000;
+      std::sort(t_drift_a_vec.begin(),t_drift_a_vec.end());
+      std::sort(t_drift_b_vec.begin(),t_drift_b_vec.end());
+      
+      for(elno = 0; elno < elno_max; ++elno){
+        if(t_drift_a_vec.size() > elno){
+          t_drift_a = t_drift_a_vec[elno];
+        }
+        if(t_drift_b_vec.size() > elno){
+          t_drift_b = t_drift_b_vec[elno];
+        }
+        fish_tree->Fill();
+      }
+      
+      if(t_drift_a_vec.size() > 0){
+        th2_first_e->Fill(last_y*10.,t_drift_a_vec[0]);
+      }
+      if(t_drift_a_vec.size() > 1){
+        th2_second_e->Fill(last_y*10.,t_drift_a_vec[1]);
+      }
+      if(t_drift_a_vec.size() > 2){
+        th2_third_e->Fill(last_y*10.,t_drift_a_vec[2]);
+      }
+      if(t_drift_a_vec.size() > 3){
+        th2_fourth_e->Fill(last_y*10.,t_drift_a_vec[3]);
+      }
+      
+      
+      t_drift_a_vec.clear();
+      t_drift_b_vec.clear();
       
       if(draw_pulses && n < 100){
         if(last_n == 1){
@@ -267,16 +326,8 @@ void ascii_to_ttree(TString infile) {
 //           th_esig->DrawClone("same");
         }
       }
-      gROOT->cd();
-      th_esig_cum = th_esig->GetCumulative();
-      t_drift_first  = th_esig->GetXaxis()->GetBinCenter(  th_esig_cum->FindFirstBinAbove(0)  ) ;
-      t_drift_second = th_esig->GetXaxis()->GetBinCenter(  th_esig_cum->FindFirstBinAbove(1)  ) ;
-      t_drift_third  = th_esig->GetXaxis()->GetBinCenter(  th_esig_cum->FindFirstBinAbove(2)  ) ;
-      t_drift_fourth = th_esig->GetXaxis()->GetBinCenter(  th_esig_cum->FindFirstBinAbove(3)  ) ;
-      th2_first_e->Fill(last_y*10.,t_drift_first*1e9);
-      th2_second_e->Fill(last_y*10.,t_drift_second*1e9);
-      th2_third_e->Fill(last_y*10.,t_drift_third*1e9);
-      th2_fourth_e->Fill(last_y*10.,t_drift_fourth*1e9);
+//       gROOT->cd();
+//       th_esig_cum = th_esig->GetCumulative();
 //       th_conv->SetName(Form("%d pulse",i));
 // //       th_conv->Write();
 //       hist_to_tarrayf(th_conv,signal_xarr,signal_yarr);
@@ -415,6 +466,18 @@ c_first_to_fourth->cd(3);
 th2_third_e->Draw("colz");
 c_first_to_fourth->cd(4);
 th2_fourth_e->Draw("colz");
+
+TCanvas* fish_cavas = new TCanvas();
+fish_cavas->Divide(3,2);
+// draw a fish
+for (Int_t i = 0; i < 6; ++i){
+  fish_cavas->cd(i+1);
+  fish_tree->Draw(Form("(t_drift_b-t_drift_a):(t_drift_b+t_drift_a)>>fish%d(500,-200,300,200,-100,100)",i),
+                  Form("t_drift_b <1000 && elno == %d",i),"colz");
+  
+}
+
+
 
 
 // th2_first_e_0->Draw(); // draw the first fit parameter (constant, in this case)
