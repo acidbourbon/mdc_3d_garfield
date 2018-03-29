@@ -376,7 +376,6 @@ f_out->cd();
   
 Int_t graphno = 0;
 
-gROOT->cd();
 for(Int_t my_elno = 0; my_elno < 10; my_elno+=2){
   graphno++;
 
@@ -398,6 +397,7 @@ Int_t tgepoint = 0;
 for(auto const& dummy: laser_y_positions){
 //   cout << "  " << dummy.first << endl;
   Float_t y_pos = dummy.first*1000;
+  gROOT->cd();
   fish_tree->Draw(Form("t_drift_a >> dummy_hist_%f_um",y_pos),Form("abs(%f - y*1000)<1 && elno ==%d",y_pos,my_elno),"");
   TH1F* dummy_hist = (TH1F*) gROOT->Get(Form("dummy_hist_%f_um",y_pos));
   Float_t drift_time = dummy_hist->GetMean();
@@ -408,6 +408,9 @@ for(auto const& dummy: laser_y_positions){
   tgepoint++;
 //   cout << "y pos: " << y_pos << " drift time: " << drift_time << endl;
 }
+  f_out->cd();
+  tge_drift_time->Write();
+  tge_drift_time_uncert->Write();
 
   mg->Add(tge_drift_time);
   leg->AddEntry(tge_drift_time,Form("electron %d",my_elno),"l");
