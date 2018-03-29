@@ -264,8 +264,10 @@ void ascii_to_ttree_laser(TString infile) {
   
   // remember the y laser positions
   std::map<Float_t,Int_t> laser_x_positions;
-  std::map<Float_t,Int_t> laser_y_positions;
+  std::map<Float_t,Int_t> laser_ypositions;
   std::map<Float_t,Int_t> laser_z_positions;
+  
+  std::map<Float_t, std::map<Float_t,  std::map<Float_t,Int_t>>> laser_positions;
   
   
   
@@ -289,8 +291,9 @@ void ascii_to_ttree_laser(TString infile) {
 //     cout << "n: " << n << endl;
     if (n > last_n){
       laser_x_positions[last_x]++;
-      laser_y_positions[last_y]++;
+      laser_ypositions[last_y]++;
       laser_z_positions[last_z]++;
+      laser_positions[last_x][last_y][last_z]++;
 //       cout << "new N! " << endl;
 //       new TCanvas();
 /*      
@@ -351,21 +354,34 @@ void ascii_to_ttree_laser(TString infile) {
 // new TCanvas();
 // th2_first_e->Draw("colz");
 
-cout << "all laser x positions: " << endl;
-for(auto const& dummy: laser_x_positions){
-  cout << "  " << dummy.first << endl;
-}
+// cout << "all laser x positions: " << endl;
+// for(auto const& dummy: laser_x_positions){
+//   cout << "  " << dummy.first << endl;
+// }
+// 
+// cout << "all laser y positions: " << endl;
+// for(auto const& dummy: laser_ypositions){
+//   cout << "  " << dummy.first << endl;
+// }
+// 
+// cout << "all laser z positions: " << endl;
+// for(auto const& dummy: laser_z_positions){
+//   cout << "  " << dummy.first << endl;
+// }
 
-cout << "all laser y positions: " << endl;
-for(auto const& dummy: laser_y_positions){
-  cout << "  " << dummy.first << endl;
+/*
+cout << "all laser positions: " << endl;
+for(auto const& xmap: laser_positions){
+//   cout << "  " << xmap.first << endl;
+  for(auto const& ymap: xmap.second){
+//     cout << "  " << ymap.first << endl;
+    for(auto const& zmap: ymap.second){
+      cout << "x " << xmap.first << " y " << ymap.first << " z " << zmap.first << endl;
+      
+    }
+  }
 }
-
-cout << "all laser z positions: " << endl;
-for(auto const& dummy: laser_z_positions){
-  cout << "  " << dummy.first << endl;
-}
-
+*/
 
 
 f_out->cd();
@@ -376,7 +392,51 @@ f_out->cd();
   
 Int_t graphno = 0;
 
-for(Int_t my_elno = 0; my_elno < 10; my_elno+=2){
+
+
+  Double_t t1=0;   
+  Double_t t1_mean=0;   
+  Double_t counts=1;    
+  Double_t ref_counts=1;
+  Double_t efficiency=1;
+  Double_t t1_std=0;    
+  Double_t tot_mean=0;  
+  Double_t tot_std=0;  
+  Double_t xpos=0;
+  Double_t ypos=0;
+  Double_t zpos=0;
+  Double_t polar_y=0;
+  Double_t polar_z=0;
+  Double_t radius=0;
+  Double_t phi=0;
+  Double_t pol_cent_x=0;
+  Double_t pol_cent_y=0;
+  Double_t pol_cent_z=0;
+  
+  TTree* scan_data_tree = new TTree("scan_data_tree","scan_data_tree");
+  
+  scan_data_tree->Branch("t1",&t1);
+  scan_data_tree->Branch("t1_mean",&t1_mean);
+  scan_data_tree->Branch("counts",&counts);
+  scan_data_tree->Branch("ref_counts",&ref_counts);
+  scan_data_tree->Branch("t1_std",&t1_std);
+  scan_data_tree->Branch("tot_means",&tot_mean);
+  scan_data_tree->Branch("tot_std",&tot_std);
+  scan_data_tree->Branch("xpos",&xpos);
+  scan_data_tree->Branch("ypos",&ypos);
+  scan_data_tree->Branch("zpos",&zpos);
+  scan_data_tree->Branch("efficiency",&efficiency);
+  scan_data_tree->Branch("radius",&radius);
+  scan_data_tree->Branch("phi",&phi);
+  scan_data_tree->Branch("polar_y",&polar_y);
+  scan_data_tree->Branch("polar_z",&polar_z);
+  scan_data_tree->Branch("pol_cent_x",&pol_cent_x);
+  scan_data_tree->Branch("pol_cent_y",&pol_cent_y);
+  scan_data_tree->Branch("pol_cent_z",&pol_cent_z);
+
+
+
+for(Int_t my_elno = 0; my_elno < 1; my_elno+=2){
   graphno++;
 
 TGraphErrors* tge_drift_time = new TGraphErrors();
@@ -394,19 +454,60 @@ tge_drift_time_uncert->GetXaxis()->SetTitle("y pos (um)");
 tge_drift_time_uncert->GetYaxis()->SetTitle("drift time uncertainty (ns)");
 
 Int_t tgepoint = 0;
-for(auto const& dummy: laser_y_positions){
+  
+  
+for(auto const& xmap: laser_positions){
+//   cout << "  " << xmap.first << endl;
+  for(auto const& ymap: xmap.second){
+//     cout << "  " << ymap.first << endl;
+    for(auto const& zmap: ymap.second){
+      cout << "x " << xmap.first << " y " << ymap.first << " z " << zmap.first << endl;
+      
+  xpos = xmap.first * 1000.0;
+  ypos = ymap.first * 1000.0;
+  zpos = zmap.first * 1000.0;
+  
 //   cout << "  " << dummy.first << endl;
-  Float_t y_pos = dummy.first*1000;
-  gROOT->cd();
-  fish_tree->Draw(Form("t_drift_a >> dummy_hist_%f_um",y_pos),Form("abs(%f - y*1000)<1 && elno ==%d",y_pos,my_elno),"");
-  TH1F* dummy_hist = (TH1F*) gROOT->Get(Form("dummy_hist_%f_um",y_pos));
+//   gROOT->cd();
+  f_out->cd();
+  fish_tree->Draw(Form("t_drift_a >> %05.0f_%05.0f_%05.0f_t1_hist",xpos,ypos,zpos),Form("abs(%f - x*1000)<1 && abs(%f - y*1000)<1 && abs(%f - z*1000)<1 && elno ==%d",xpos,ypos,zpos,my_elno),"");
+//   TH1F* dummy_hist = (TH1F*) gROOT->Get(Form("%05.0f_%05.0f_%05.0f_t1_hist",xpos,ypos,zpos));
+  TH1F* dummy_hist = (TH1F*) f_out->Get(Form("%05.0f_%05.0f_%05.0f_t1_hist",xpos,ypos,zpos));
   Float_t drift_time = dummy_hist->GetMean();
   Float_t drift_time_stdev = dummy_hist->GetStdDev();
-  tge_drift_time->SetPoint(tgepoint,y_pos,drift_time);
+  tge_drift_time->SetPoint(tgepoint,ypos,drift_time);
   tge_drift_time->SetPointError(tgepoint,0,drift_time_stdev);
-  tge_drift_time_uncert->SetPoint(tgepoint,y_pos,drift_time_stdev);
+  tge_drift_time_uncert->SetPoint(tgepoint,ypos,drift_time_stdev);
   tgepoint++;
-//   cout << "y pos: " << y_pos << " drift time: " << drift_time << endl;
+//   cout << "y pos: " << ypos << " drift time: " << drift_time << endl;
+  
+  
+  /// this is for exporting the data for comparison with rossendorf measurements
+  
+  
+    polar_y = ypos - pol_cent_y;
+    polar_z = zpos - pol_cent_z;
+
+  
+    Double_t pi = TMath::Pi();
+    
+    radius = TMath::Sqrt(TMath::Power(pol_cent_y-ypos,2) +  TMath::Power(pol_cent_z-zpos,2));
+    
+    if (polar_y >= 0 && polar_z >= 0) {
+      phi = TMath::ATan( polar_z/polar_y);
+    } else if ( polar_y < 0 && polar_z >= 0) {
+      phi = TMath::ATan( (-polar_y)/polar_z) + pi / 2.0;
+    } else if ( polar_y < 0 && polar_z < 0) {
+      phi = TMath::ATan( polar_z/polar_y) + pi;
+    } else if ( polar_y >= 0 && polar_z < 0) {
+      phi = TMath::ATan( polar_y/(-polar_z)) + pi * 3.0/2.0;
+    }
+  
+    scan_data_tree->Fill();
+  
+  
+    }
+  }
 }
   f_out->cd();
   tge_drift_time->Write();
@@ -418,7 +519,7 @@ for(auto const& dummy: laser_y_positions){
 // tge_drift_time->Draw("APL");
 // new TCanvas();
 // tge_drift_time_uncert->Draw("APL");
-
+  
 }
 f_out->cd();
 

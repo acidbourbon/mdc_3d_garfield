@@ -4,7 +4,7 @@
 temp=$(mktemp)
 
 plot_out=mdc_$(./run_counter.sh).ps
-
+mkdir tracks
 
 cell_generator=./MDC_cells/gen_MDC_II_1700V_3x3x3.py
 gas_def=./gasses/ar70_co230.txt
