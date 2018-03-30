@@ -1,0 +1,12 @@
+you can use the "Dockerfile" in this directory
+to generate a container that is guaranteed to contain and run the scripts you find
+in this repository
+
+#build the container
+docker build -t mdc_3d_garfield .
+
+#run the container
+docker run --rm -it mdc_3d_garfield /bin/bash
+
+cd /mdc_3d_garfield/
+-> enjoy the macros
