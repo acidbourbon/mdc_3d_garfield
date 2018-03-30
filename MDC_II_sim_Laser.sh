@@ -248,6 +248,7 @@ fi
 
 export LD_LIBRARY_PATH="./"
 ./garfield-9 < $temp | tee garfield_stdout.txt
+rm $temp # clean up garfield input data
 ps2pdf $plot_out
 convert $plot_out -alpha off -delay 400 $plot_out.gif
 
