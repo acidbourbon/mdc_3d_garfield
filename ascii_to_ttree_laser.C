@@ -85,7 +85,7 @@ void ascii_to_ttree_laser(TString infile) {
   Int_t nth_electron = 0;
   Int_t elno_max = 20;
   
-  TFile* f_out = new TFile("f_out.root","RECREATE");
+  TFile* f_out = new TFile(Form("%s%s",gSystem->DirName(infile),"/f_out.root"),"RECREATE");
   
   TFile* infile_root = new TFile(infile+".root");
   
