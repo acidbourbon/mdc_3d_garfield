@@ -73,6 +73,28 @@ TH1* fftconvolve(TH1D* h1, TH1D* h2){
 }
 
 
+TString from_env(TString env_var,TString default_val){
+  if(gSystem->Getenv(env_var)){
+    return gSystem->Getenv(env_var);
+  } 
+  return default_val;
+}
+
+Float_t from_env_float(TString env_var,TString default_val){
+  TString val = default_val;
+  if(gSystem->Getenv(env_var)){
+    val = gSystem->Getenv(env_var);
+  } 
+  return val.Atof();
+}
+
+Int_t from_env_int(TString env_var,TString default_val){
+  TString val = default_val;
+  if(gSystem->Getenv(env_var)){
+    val = gSystem->Getenv(env_var);
+  } 
+  return val.Atoi();
+}
 
 
 
@@ -90,7 +112,8 @@ void ascii_to_ttree_laser(TString infile) {
   TFile* infile_root = new TFile(infile+".root");
   
   
-  
+  Int_t event_charge_limit = from_env_int("event_charge_limit","1000000");
+  Int_t event_limit = from_env_int("event_limit","1000000");
   
   
   TTree* garfield_tree;
@@ -264,7 +287,7 @@ void ascii_to_ttree_laser(TString infile) {
   
   // remember the y laser positions
   std::map<Float_t,Int_t> laser_x_positions;
-  std::map<Float_t,Int_t> laser_ypositions;
+  std::map<Float_t,Int_t> laser_y_positions;
   std::map<Float_t,Int_t> laser_z_positions;
   
   std::map<Float_t, std::map<Float_t,  std::map<Float_t,Int_t>>> laser_positions;
@@ -280,45 +303,49 @@ void ascii_to_ttree_laser(TString infile) {
     } else {
       n++; // to trigger last processing
     }
-    
-    if (wire == 1){
-      t_drift_a_vec.push_back(t_drift*1000);
-    } else if (wire == 2){
-      t_drift_b_vec.push_back(t_drift*1000);
+    if(t_drift_a_vec.size() < event_charge_limit){ 
+      if (wire == 1){
+        t_drift_a_vec.push_back(t_drift*1000);
+      } else if (wire == 2){
+        t_drift_b_vec.push_back(t_drift*1000);
+      }
     }
     
     
 //     cout << "n: " << n << endl;
     if (n > last_n){
-      laser_x_positions[last_x]++;
-      laser_ypositions[last_y]++;
-      laser_z_positions[last_z]++;
-      laser_positions[last_x][last_y][last_z]++;
-//       cout << "new N! " << endl;
-//       new TCanvas();
-/*      
-      delete th_conv;
-      th_conv = fftconvolve(th_kern,th_esig);
+      if(laser_positions[last_x][last_y][last_z] < event_limit){ // to counteract effect of double points in point_list.txt
+        
       
-      th_conv->GetXaxis()->SetRangeUser(-0.1e-6,0.5e-6);
-      th_conv->GetYaxis()->SetRangeUser(-2e-3,0.5e-3); */
-//       th_esig->DrawClone();
+        laser_x_positions[last_x]++;
+        laser_y_positions[last_y]++;
+        laser_z_positions[last_z]++;
+        laser_positions[last_x][last_y][last_z]++;
+  //       cout << "new N! " << endl;
+  //       new TCanvas();
+  /*      
+        delete th_conv;
+        th_conv = fftconvolve(th_kern,th_esig);
+        
+        th_conv->GetXaxis()->SetRangeUser(-0.1e-6,0.5e-6);
+        th_conv->GetYaxis()->SetRangeUser(-2e-3,0.5e-3); */
+  //       th_esig->DrawClone();
 
-      t_drift_a = 1000;
-      t_drift_b = 1000;
-      std::sort(t_drift_a_vec.begin(),t_drift_a_vec.end());
-      std::sort(t_drift_b_vec.begin(),t_drift_b_vec.end());
-      
-      for(elno = 0; elno < elno_max; ++elno){
-        if(t_drift_a_vec.size() > elno){
-          t_drift_a = t_drift_a_vec[elno];
+        t_drift_a = 1000;
+        t_drift_b = 1000;
+        std::sort(t_drift_a_vec.begin(),t_drift_a_vec.end());
+        std::sort(t_drift_b_vec.begin(),t_drift_b_vec.end());
+        
+        for(elno = 0; elno < elno_max; ++elno){
+          if(t_drift_a_vec.size() > elno){
+            t_drift_a = t_drift_a_vec[elno];
+          }
+          if(t_drift_b_vec.size() > elno){
+            t_drift_b = t_drift_b_vec[elno];
+          }
+          fish_tree->Fill();
         }
-        if(t_drift_b_vec.size() > elno){
-          t_drift_b = t_drift_b_vec[elno];
-        }
-        fish_tree->Fill();
       }
-      
       
       t_drift_a_vec.clear();
       t_drift_b_vec.clear();
@@ -405,13 +432,15 @@ Int_t graphno = 0;
   Double_t xpos=0;
   Double_t ypos=0;
   Double_t zpos=0;
+  Double_t polar_x=0;
   Double_t polar_y=0;
   Double_t polar_z=0;
   Double_t radius=0;
+  Double_t radius_xy=0;
   Double_t phi=0;
-  Double_t pol_cent_x=0;
-  Double_t pol_cent_y=0;
-  Double_t pol_cent_z=0;
+  Double_t pol_cent_x=from_env_float("pol_cent_x","0");
+  Double_t pol_cent_y=from_env_float("pol_cent_y","0");
+  Double_t pol_cent_z=from_env_float("pol_cent_z","0");
   
   TTree* scan_data_tree = new TTree("scan_data_tree","scan_data_tree");
   
@@ -427,7 +456,9 @@ Int_t graphno = 0;
   scan_data_tree->Branch("zpos",&zpos);
   scan_data_tree->Branch("efficiency",&efficiency);
   scan_data_tree->Branch("radius",&radius);
+  scan_data_tree->Branch("radius_xy",&radius_xy);
   scan_data_tree->Branch("phi",&phi);
+  scan_data_tree->Branch("polar_x",&polar_x);
   scan_data_tree->Branch("polar_y",&polar_y);
   scan_data_tree->Branch("polar_z",&polar_z);
   scan_data_tree->Branch("pol_cent_x",&pol_cent_x);
@@ -467,12 +498,16 @@ for(auto const& xmap: laser_positions){
   ypos = ymap.first * 1000.0;
   zpos = zmap.first * 1000.0;
   
+    polar_x = xpos - pol_cent_x;
+    polar_y = ypos - pol_cent_y;
+    polar_z = zpos - pol_cent_z;
+  
 //   cout << "  " << dummy.first << endl;
 //   gROOT->cd();
   f_out->cd();
-  fish_tree->Draw(Form("t_drift_a >> %05.0f_%05.0f_%05.0f_t1_hist",xpos,ypos,zpos),Form("abs(%f - x*1000)<1 && abs(%f - y*1000)<1 && abs(%f - z*1000)<1 && elno ==%d",xpos,ypos,zpos,my_elno),"");
+  fish_tree->Draw(Form("t_drift_a >> %05.0f_%05.0f_%05.0f_t1_hist",polar_x,polar_y,polar_z),Form("abs(%f - x*1000)<1 && abs(%f - y*1000)<1 && abs(%f - z*1000)<1 && elno ==%d",xpos,ypos,zpos,my_elno),"");
 //   TH1F* dummy_hist = (TH1F*) gROOT->Get(Form("%05.0f_%05.0f_%05.0f_t1_hist",xpos,ypos,zpos));
-  TH1F* dummy_hist = (TH1F*) f_out->Get(Form("%05.0f_%05.0f_%05.0f_t1_hist",xpos,ypos,zpos));
+  TH1F* dummy_hist = (TH1F*) f_out->Get(Form("%05.0f_%05.0f_%05.0f_t1_hist",polar_x,polar_y,polar_z));
   Float_t drift_time = dummy_hist->GetMean();
   Float_t drift_time_stdev = dummy_hist->GetStdDev();
   tge_drift_time->SetPoint(tgepoint,ypos,drift_time);
@@ -485,23 +520,24 @@ for(auto const& xmap: laser_positions){
   /// this is for exporting the data for comparison with rossendorf measurements
   
   
-    polar_y = ypos - pol_cent_y;
-    polar_z = zpos - pol_cent_z;
 
   
     Double_t pi = TMath::Pi();
     
-    radius = TMath::Sqrt(TMath::Power(pol_cent_y-ypos,2) +  TMath::Power(pol_cent_z-zpos,2));
+    radius = TMath::Sqrt(polar_x*polar_x +polar_y*polar_y +polar_z*polar_z);
+    radius_xy = TMath::Sign(TMath::Sqrt(polar_x*polar_x +polar_y*polar_y), polar_y); // it gets the sign of polar_y
     
     if (polar_y >= 0 && polar_z >= 0) {
-      phi = TMath::ATan( polar_z/polar_y);
+      phi = TMath::ATan( polar_z/radius_xy);
     } else if ( polar_y < 0 && polar_z >= 0) {
-      phi = TMath::ATan( (-polar_y)/polar_z) + pi / 2.0;
+      phi = TMath::ATan( (-radius_xy)/polar_z) + pi / 2.0;
     } else if ( polar_y < 0 && polar_z < 0) {
-      phi = TMath::ATan( polar_z/polar_y) + pi;
+      phi = TMath::ATan( polar_z/radius_xy) + pi;
     } else if ( polar_y >= 0 && polar_z < 0) {
-      phi = TMath::ATan( polar_y/(-polar_z)) + pi * 3.0/2.0;
+      phi = TMath::ATan( radius_xy/(-polar_z)) + pi * 3.0/2.0;
     }
+    
+//     phi = TMath::ATan2(polar_z, radius_xy);
   
     scan_data_tree->Fill();
   
