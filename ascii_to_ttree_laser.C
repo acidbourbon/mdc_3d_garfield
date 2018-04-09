@@ -107,13 +107,19 @@ void ascii_to_ttree_laser(TString infile) {
   Int_t nth_electron = 0;
   Int_t elno_max = 20;
   
-  TFile* f_out = new TFile(Form("%s%s",gSystem->DirName(infile),"/f_out.root"),"RECREATE");
+  TString outfile_name = from_env("outfile_name","f_out.root");
+  
+  TFile* f_out = new TFile(Form("%s/%s",gSystem->DirName(infile),outfile_name.Data()),"RECREATE");
   
   TFile* infile_root = new TFile(infile+".root");
   
   
   Int_t event_charge_limit = from_env_int("event_charge_limit","1000000");
   Int_t event_limit = from_env_int("event_limit","1000000");
+  
+  Float_t cut_around_laser_x_um = from_env_float("cut_around_laser_x_um","10000");
+  Float_t cut_around_laser_y_um = from_env_float("cut_around_laser_y_um","10000");
+  Float_t cut_around_laser_z_um = from_env_float("cut_around_laser_z_um","10000");
   
   
   TTree* garfield_tree;
@@ -256,12 +262,16 @@ void ascii_to_ttree_laser(TString infile) {
   Float_t t_drift_third;
   Float_t t_drift_fourth;
   Float_t n,x,y,z,last_x,last_y,last_z,wire;
+  Float_t charge_x,charge_y,charge_z;
   Float_t last_n = 1;
   garfield_tree->SetBranchAddress("t_drift",&t_drift);
   garfield_tree->SetBranchAddress("n",&n);
   garfield_tree->SetBranchAddress("laser_x",&x);
   garfield_tree->SetBranchAddress("laser_y",&y);
   garfield_tree->SetBranchAddress("laser_z",&z);
+  garfield_tree->SetBranchAddress("x",&charge_x);
+  garfield_tree->SetBranchAddress("y",&charge_y);
+  garfield_tree->SetBranchAddress("z",&charge_z);
   garfield_tree->SetBranchAddress("wire",&wire);
  
 //   new TCanvas();
@@ -304,11 +314,17 @@ void ascii_to_ttree_laser(TString infile) {
       n++; // to trigger last processing
     }
     if(t_drift_a_vec.size() < event_charge_limit){ 
-      if (wire == 1){
-        t_drift_a_vec.push_back(t_drift*1000);
-      } else if (wire == 2){
-        t_drift_b_vec.push_back(t_drift*1000);
-      }
+      if( TMath::Abs(x*1000 - charge_x*10000) < cut_around_laser_x_um){
+      if( TMath::Abs(y*1000 - charge_y*10000) < cut_around_laser_y_um){
+      if( TMath::Abs(z*1000 - charge_z*10000) < cut_around_laser_z_um){
+        
+        if (wire == 1){
+          t_drift_a_vec.push_back(t_drift*1000);
+        } else if (wire == 2){
+          t_drift_b_vec.push_back(t_drift*1000);
+        }
+        
+      }}}
     }
     
     

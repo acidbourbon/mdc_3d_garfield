@@ -213,7 +213,7 @@ export charges=230
 export events=100
 export sigma_y=0.001 # mm
 export sigma_x=0.001 # mm
-export sigma_z=0.144 # mm -> gaussian width from xingming, equals a FWHM of 340 um
+export sigma_z=0.20451 # mm -> rayleigh length of non-gaussian ionization density in z
 # export charges=230 # ca Fe55 charge deposition
 export outfile="./tracks/input_tracks.txt"
 
@@ -266,7 +266,7 @@ if [ $root_drift_times ]; then
     grep -P "Hit [ST]" $i |  perl -p -e "s/unavailable unavailable unavailable  Hit [ST] solid//g"| perl -p -e "s/^/$laser_position /g" >> track_drift_line_data.txt
   done
   cd $here
-#   xterm -e root -l 'ascii_to_ttree_laser.C("tracks/track_drift_line_data.txt")' &
+  root -l -q 'ascii_to_ttree_laser.C("tracks/track_drift_line_data.txt")' 
 fi
 
 if [ $animation == "true" ]; then
