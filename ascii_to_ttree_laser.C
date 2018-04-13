@@ -105,7 +105,7 @@ void ascii_to_ttree_laser(TString infile) {
   
   // for fish
   Int_t nth_electron = 0;
-  Int_t elno_max = 20;
+  Int_t elno_max = from_env_int("elno_max","50");
   
   TString outfile_name = from_env("outfile_name","f_out.root");
   
@@ -483,7 +483,7 @@ Int_t graphno = 0;
 
 
 
-for(Int_t my_elno = 0; my_elno < 1; my_elno+=2){
+for(Int_t my_elno = 0; my_elno < elno_max; my_elno+=5){
   graphno++;
 
 TGraphErrors* tge_drift_time = new TGraphErrors();
@@ -521,9 +521,12 @@ for(auto const& xmap: laser_positions){
 //   cout << "  " << dummy.first << endl;
 //   gROOT->cd();
   f_out->cd();
-  fish_tree->Draw(Form("t_drift_a >> %05.0f_%05.0f_%05.0f_t1_hist",polar_x,polar_y,polar_z),Form("abs(%f - x*1000)<1 && abs(%f - y*1000)<1 && abs(%f - z*1000)<1 && elno ==%d",xpos,ypos,zpos,my_elno),"");
+//   fish_tree->Draw(Form("t_drift_a >> %05.0f_%05.0f_%05.0f_t1_hist",polar_x,polar_y,polar_z),Form("abs(%f - x*1000)<1 && abs(%f - y*1000)<1 && abs(%f - z*1000)<1 && elno ==%d",xpos,ypos,zpos,my_elno),"");
 //   TH1F* dummy_hist = (TH1F*) gROOT->Get(Form("%05.0f_%05.0f_%05.0f_t1_hist",xpos,ypos,zpos));
-  TH1F* dummy_hist = (TH1F*) f_out->Get(Form("%05.0f_%05.0f_%05.0f_t1_hist",polar_x,polar_y,polar_z));
+  TH1F* dummy_hist;
+  TString hist_name = Form("%05.0f_%05.0f_%05.0f_t1_hist_elno_%05d",polar_x,polar_y,polar_z,my_elno);
+  fish_tree->Draw(Form("t_drift_a >> %s",hist_name.Data()),Form("abs(%f - x*1000)<1 && abs(%f - y*1000)<1 && abs(%f - z*1000)<1 && elno ==%d",xpos,ypos,zpos,my_elno),"");
+  dummy_hist = (TH1F*) f_out->Get(hist_name);
   Float_t drift_time = dummy_hist->GetMean();
   Float_t drift_time_stdev = dummy_hist->GetStdDev();
   tge_drift_time->SetPoint(tgepoint,ypos,drift_time);

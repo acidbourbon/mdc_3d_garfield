@@ -55,11 +55,13 @@ Float_t sigma_z = from_env_float("sigma_z","0.2045"); // mm // rayleigh length i
   TF1* charge_density_x = new TF1("charge_density_x", "gaus",-.5,.5);
   charge_density_x->SetParameter(0,1/(TMath::Sqrt(TMath::TwoPi())*sigma_x) );
   charge_density_x->SetParameter(1,0);
+  charge_density_x->SetNpx(1000);
   charge_density_x->SetParameter(2,sigma_x);
   
   TF1* charge_density_y = new TF1("charge_density_y", "gaus",-.5,.5);
   charge_density_y->SetParameter(0,1/(TMath::Sqrt(TMath::TwoPi())*sigma_y) );
   charge_density_y->SetParameter(1,0);
+  charge_density_y->SetNpx(1000);
   charge_density_y->SetParameter(2,sigma_y);
   
   
@@ -68,11 +70,15 @@ Float_t sigma_z = from_env_float("sigma_z","0.2045"); // mm // rayleigh length i
   charge_density_z->SetParameter(0,1); // just scaling constant
   charge_density_z->SetParameter(1,sigma_z); // rayleigh length in mm
   charge_density_z->SetParameter(2,2); // n for n-photon absorbtion 
+  charge_density_z->SetNpx(1000);
   
 //   TF1* charge_density_z_gaus = new TF1("charge_density_z_gaus", "gaus",-3,3);
 //   charge_density_z_gaus->SetParameter(0,1/(TMath::Sqrt(TMath::TwoPi())*sigma_z) );
+//   charge_density_z_gaus->SetParameter(0,1);
 //   charge_density_z_gaus->SetParameter(1,0);
 //   charge_density_z_gaus->SetParameter(2,sigma_z);
+//   charge_density_z_gaus->SetLineColor(1);
+//   charge_density_z_gaus->SetNpx(1000);
   
 //   TF1* charge_density_z = new TF1("charge_density_z", "gaus",-3,3);
 //   charge_density_z->SetParameter(0,1/(TMath::Sqrt(TMath::TwoPi())*sigma_z) );
@@ -105,9 +111,17 @@ for (Int_t i = 0 ; i< events; i++){
 }
 
 // new TCanvas();
-// dummy->Draw();
+// // dummy->Draw();
 // charge_density_z_gaus->Draw();
-// charge_density_z->Draw("same");
+// charge_density_z_gaus->GetXaxis()->SetTitle("z pos (mm)");
+// charge_density_z_gaus->GetYaxis()->SetTitle("Ionization density (a.u.)");
+// charge_density_z->DrawClone("same");
+//   charge_density_z->SetParameter(2,3); // n for n-photon absorbtion 
+// 
+// charge_density_z->DrawClone("same");
+//   charge_density_z->SetParameter(2,4); // n for n-photon absorbtion 
+// 
+// charge_density_z->DrawClone("same");
 
 
   
