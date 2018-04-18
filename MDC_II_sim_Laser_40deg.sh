@@ -1,15 +1,19 @@
 #!/bin/bash
 
 
+
+
 temp=$(mktemp)
 
 plot_out=mdc_$(./run_counter.sh).ps
 mkdir tracks
 
-cell_generator=./MDC_cells/gen_MDC_II_1700V_3x3x3.py
+cell_generator=./MDC_cells/gen_MDC_II_40deg_1700V_3x3x3.py
 gas_def=./gasses/ar70_co230.txt
 # gas_def=./gasses/ar86_co214.txt
 
+sense_angle_deg=40
+cathode_pitch=0.2
 
 # animation=true
 # root_drift_times=true
@@ -19,15 +23,14 @@ gas_def=./gasses/ar70_co230.txt
 
 # view_cell=true
 # plot_field=true
-# field_animation=true
+field_animation=true
 # view_inner_cube=true
 # drift_point_charge=true
 # drift_MIPS_vcurve=true
 # drift_MIPS_track=true
-drift_UV_charge=true
+# drift_UV_charge=true
 
 cat garfinit.txt >> $temp
-
 
 
 
@@ -110,11 +113,24 @@ fi
 ## field animation
 if [ $field_animation == "true" ]; then
 animation=true
-for i in $(seq -0.1 0.02 0.1); do
+sin_angle=$(echo "s($sense_angle_deg/360*2*4*a(1))"| bc -l)
+cos_angle=$(echo "c($sense_angle_deg/360*2*4*a(1))"| bc -l)
+tan_angle=$(echo "$sin_angle/$cos_angle" | bc -l)
+plane_x_coef=$(echo "1/$tan_angle" | bc -l)
+cathode_repetition_halflength=$(echo "$cathode_pitch/$sin_angle/2" | bc -l)
+
+for i in $(seq -$cathode_repetition_halflength 0.02 $cathode_repetition_halflength); do
+plane_sum=$(echo "$i / $sin_angle" | bc -l)
+area_x0=$(echo "-1   + $i*$cos_angle" | bc -l)
+area_x1=$(echo " 1   + $i*$cos_angle" | bc -l)
+area_y0=$(echo "-0.4 + $i*$sin_angle" | bc -l)
+area_y1=$(echo " 0.4 + $i*$sin_angle" | bc -l)
+area_z0=-0.4
+area_z1=0.4
 cat <<EOF>>$temp
 //  contour plot
-area -1 -0.4 -0.4 1 0.4 0.4 ...
-    view x=$i cut rot 90
+area $area_x0 $area_y0 $area_z0 $area_x1 $area_y1 $area_z1 ...
+    view y+$plane_x_coef*x=$plane_sum cut rot 90
 grid 25
 pl surf
 
@@ -276,6 +292,6 @@ if [ $animation == "true" ]; then
   xdg-open $plot_out.gif
 else 
   rm $plot_out
-#   gv $( echo $plot_out | sed s/.ps/.pdf/ )
+  gv $( echo $plot_out | sed s/.ps/.pdf/ )
 fi
 
