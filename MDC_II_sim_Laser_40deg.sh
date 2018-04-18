@@ -23,12 +23,12 @@ cathode_pitch=0.2
 
 # view_cell=true
 # plot_field=true
-field_animation=true
+# field_animation=true
 # view_inner_cube=true
 # drift_point_charge=true
 # drift_MIPS_vcurve=true
 # drift_MIPS_track=true
-# drift_UV_charge=true
+drift_UV_charge=true
 
 cat garfinit.txt >> $temp
 
@@ -117,7 +117,7 @@ sin_angle=$(echo "s($sense_angle_deg/360*2*4*a(1))"| bc -l)
 cos_angle=$(echo "c($sense_angle_deg/360*2*4*a(1))"| bc -l)
 tan_angle=$(echo "$sin_angle/$cos_angle" | bc -l)
 plane_x_coef=$(echo "1/$tan_angle" | bc -l)
-cathode_repetition_halflength=$(echo "$cathode_pitch/$sin_angle/2" | bc -l)
+cathode_repetition_halflength=$(echo "$cathode_pitch/$cos_angle/2" | bc -l)
 
 for i in $(seq -$cathode_repetition_halflength 0.02 $cathode_repetition_halflength); do
 plane_sum=$(echo "$i / $sin_angle" | bc -l)
@@ -133,6 +133,7 @@ area $area_x0 $area_y0 $area_z0 $area_x1 $area_y1 $area_z1 ...
     view y+$plane_x_coef*x=$plane_sum cut rot 90
 grid 25
 pl surf
+**pl cont
 
 EOF
 done
@@ -232,6 +233,8 @@ export events=100
 export sigma_y=0.001 # mm
 export sigma_x=0.001 # mm
 export sigma_z=0.20451 # mm -> rayleigh length of non-gaussian ionization density in z
+export rayleigh=0.20451 # mm -> rayleigh length of non-gaussian ionization density in z
+export n_photons=3 # 3 photon absorbtion
 # export charges=230 # ca Fe55 charge deposition
 export outfile="./tracks/input_tracks.txt"
 

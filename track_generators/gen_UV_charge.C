@@ -47,9 +47,12 @@ Float_t x = from_env_float("x","0");
 Float_t y = from_env_float("y","0");
 Float_t z = from_env_float("z","0");
 
+Int_t n_photons = from_env_int("n_photons","2");
+
 Float_t sigma_x = from_env_float("sigma_x","0.005"); // mm
 Float_t sigma_y = from_env_float("sigma_y","0.005"); // mm
 Float_t sigma_z = from_env_float("sigma_z","0.2045"); // mm // rayleigh length in mm
+Float_t rayleigh = from_env_float("rayleigh","0.2045"); // mm // rayleigh length in mm
 
 
   TF1* charge_density_x = new TF1("charge_density_x", "gaus",-.5,.5);
@@ -68,8 +71,8 @@ Float_t sigma_z = from_env_float("sigma_z","0.2045"); // mm // rayleigh length i
   // xingming distribution
   TF1* charge_density_z = new TF1("charge_density_z", "[0]*TMath::Power(1/(1+ (x/[1])*(x/[1]) ),[2]-1)",-3,3);
   charge_density_z->SetParameter(0,1); // just scaling constant
-  charge_density_z->SetParameter(1,sigma_z); // rayleigh length in mm
-  charge_density_z->SetParameter(2,2); // n for n-photon absorbtion 
+  charge_density_z->SetParameter(1,rayleigh); // rayleigh length in mm
+  charge_density_z->SetParameter(2,n_photons); // n for n-photon absorbtion 
   charge_density_z->SetNpx(1000);
   
 //   TF1* charge_density_z_gaus = new TF1("charge_density_z_gaus", "gaus",-3,3);
