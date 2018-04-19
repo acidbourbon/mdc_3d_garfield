@@ -47,7 +47,7 @@ Float_t x = from_env_float("x","0");
 Float_t y = from_env_float("y","0");
 Float_t z = from_env_float("z","0");
 
-Int_t n_photons = from_env_int("n_photons","2");
+Float_t n_photons = from_env_float("n_photons","2");
 
 Float_t sigma_x = from_env_float("sigma_x","0.005"); // mm
 Float_t sigma_y = from_env_float("sigma_y","0.005"); // mm
