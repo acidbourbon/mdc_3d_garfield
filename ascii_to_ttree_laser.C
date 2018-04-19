@@ -482,8 +482,11 @@ Int_t graphno = 0;
   scan_data_tree->Branch("pol_cent_z",&pol_cent_z);
 
 
-
-for(Int_t my_elno = 0; my_elno < elno_max; my_elno+=5){
+Int_t elno_increment = 1;
+for(Int_t my_elno = 0; my_elno <= elno_max; my_elno+=elno_increment){
+  if(my_elno >= 10){
+    elno_increment = 5;
+  }
   graphno++;
 
 TGraphErrors* tge_drift_time = new TGraphErrors();
