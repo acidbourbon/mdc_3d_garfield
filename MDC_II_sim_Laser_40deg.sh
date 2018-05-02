@@ -23,12 +23,12 @@ cathode_pitch=0.2
 
 # view_cell=true
 # plot_field=true
-# field_animation=true
+field_animation=true
 # view_inner_cube=true
 # drift_point_charge=true
 # drift_MIPS_vcurve=true
 # drift_MIPS_track=true
-drift_UV_charge=true
+# drift_UV_charge=true
 
 cat garfinit.txt >> $temp
 
@@ -123,8 +123,8 @@ for i in $(seq -$cathode_repetition_halflength 0.02 $cathode_repetition_halfleng
 plane_sum=$(echo "$i / $sin_angle" | bc -l)
 area_x0=$(echo "-1   + $i*$cos_angle" | bc -l)
 area_x1=$(echo " 1   + $i*$cos_angle" | bc -l)
-area_y0=$(echo "-0.4 + $i*$sin_angle" | bc -l)
-area_y1=$(echo " 0.4 + $i*$sin_angle" | bc -l)
+area_y0=$(echo "-0.4*$cos_angle + $i*$sin_angle" | bc -l)
+area_y1=$(echo " 0.4*$cos_angle + $i*$sin_angle" | bc -l)
 area_z0=-0.4
 area_z1=0.4
 cat <<EOF>>$temp
@@ -132,8 +132,8 @@ cat <<EOF>>$temp
 area $area_x0 $area_y0 $area_z0 $area_x1 $area_y1 $area_z1 ...
     view y+$plane_x_coef*x=$plane_sum cut rot 90
 grid 25
-pl surf
-**pl cont
+**pl surf
+pl cont
 
 EOF
 done

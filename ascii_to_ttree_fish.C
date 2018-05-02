@@ -4,6 +4,27 @@
 #include "TArray.h"
 #include "TCanvas.h"
 
+
+
+Int_t mcol(Int_t i){
+  const Int_t wheel_size = 7;
+  Int_t wheel[wheel_size] = {kBlack, kRed, kBlue, kGreen, kMagenta +1, kCyan +1, kYellow +1};
+//   i+=wheel_size;
+  if(i % wheel_size == 0){ // a blackish color
+    if(i/wheel_size == 0)
+      return kBlack;
+    if(i/wheel_size == 1)
+      return kGray+3;
+    if(i/wheel_size == 2)
+      return kGray+2;
+    if(i/wheel_size == 3)
+      return kGray+1;
+    if(i/wheel_size == 4)
+      return kGray;
+  }
+  return wheel[i%wheel_size] + i/wheel_size; 
+}
+
 // for compatibility for analysis scripts from 2016 ...
 void hist_to_tarrayf(TH1* hist, TArrayF* xarr, TArrayF* yarr){
   
@@ -220,6 +241,8 @@ void ascii_to_ttree_fish(TString infile) {
   TH2D* th2_second_e = new TH2D("th2_second_e","th2_second_e;y pos (mm);tdrift second electron (ns)",60,-3,3,samples,0,sample_width*1e9);
   TH2D* th2_third_e = new TH2D("th2_third_e","th2_third_e;y pos (mm);tdrift third electron (ns)",60,-3,3,samples,0,sample_width*1e9);
   TH2D* th2_fourth_e = new TH2D("th2_fourth_e","th2_fourth_e;y pos (mm);tdrift fourth electron (ns)",60,-3,3,samples,0,sample_width*1e9);
+  TH2D* th2_fifth_e = new TH2D("th2_fifth_e","th2_fifth_e;y pos (mm);tdrift fifth electron (ns)",60,-3,3,samples,0,sample_width*1e9);
+  TH2D* th2_sixth_e = new TH2D("th2_sixth_e","th2_sixth_e;y pos (mm);tdrift sixth electron (ns)",60,-3,3,samples,0,sample_width*1e9);
  
 //   TH1* th_conv = 0;
   
@@ -310,6 +333,12 @@ void ascii_to_ttree_fish(TString infile) {
       if(t_drift_a_vec.size() > 3){
         th2_fourth_e->Fill(last_y*10.,t_drift_a_vec[3]);
       }
+      if(t_drift_a_vec.size() > 4){
+        th2_fifth_e->Fill(last_y*10.,t_drift_a_vec[4]);
+      }
+      if(t_drift_a_vec.size() > 5){
+        th2_sixth_e->Fill(last_y*10.,t_drift_a_vec[5]);
+      }
       
       
       t_drift_a_vec.clear();
@@ -348,8 +377,10 @@ f_out->cd();
 
 Float_t max_y_sliced_means = 40.;
 
+TString fit_opt = "WW q";
 
-th2_first_e->FitSlicesY(0,1,-1,0,"WW q");
+
+th2_first_e->FitSlicesY(0,1,-1,0,fit_opt);
 // new TCanvas();
 TH1* sliced_sigmas_first_e = ((TH1*) f_out->Get("th2_first_e_2"));
 sliced_sigmas_first_e->GetYaxis()->SetRangeUser(0,10);
@@ -359,7 +390,7 @@ TH1* sliced_means_first_e = ((TH1*) f_out->Get("th2_first_e_1"));
 sliced_means_first_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 // sliced_means_first_e->DrawClone();
 
-th2_second_e->FitSlicesY(0,1,-1,0,"WW q");
+th2_second_e->FitSlicesY(0,1,-1,0,fit_opt);
 // new TCanvas();
 TH1* sliced_sigmas_second_e = ((TH1*) f_out->Get("th2_second_e_2"));
 sliced_sigmas_second_e->GetYaxis()->SetRangeUser(0,10);
@@ -369,7 +400,7 @@ TH1* sliced_means_second_e = ((TH1*) f_out->Get("th2_second_e_1"));
 sliced_means_second_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 // sliced_means_second_e->DrawClone();
 
-th2_third_e->FitSlicesY(0,1,-1,0,"WW q");
+th2_third_e->FitSlicesY(0,1,-1,0,fit_opt);
 // new TCanvas();
 TH1* sliced_sigmas_third_e = ((TH1*) f_out->Get("th2_third_e_2"));
 sliced_sigmas_third_e->GetYaxis()->SetRangeUser(0,10);
@@ -379,7 +410,7 @@ TH1* sliced_means_third_e = ((TH1*) f_out->Get("th2_third_e_1"));
 sliced_means_third_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 // sliced_means_third_e->DrawClone();
 
-th2_fourth_e->FitSlicesY(0,1,-1,0,"WW q");
+th2_fourth_e->FitSlicesY(0,1,-1,0,fit_opt);
 // new TCanvas();
 TH1* sliced_sigmas_fourth_e = ((TH1*) f_out->Get("th2_fourth_e_2"));
 sliced_sigmas_fourth_e->GetYaxis()->SetRangeUser(0,10);
@@ -389,24 +420,52 @@ TH1* sliced_means_fourth_e = ((TH1*) f_out->Get("th2_fourth_e_1"));
 sliced_means_fourth_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 // sliced_means_fourth_e->DrawClone();
 
+th2_fifth_e->FitSlicesY(0,1,-1,0,fit_opt);
+// new TCanvas();
+TH1* sliced_sigmas_fifth_e = ((TH1*) f_out->Get("th2_fifth_e_2"));
+sliced_sigmas_fifth_e->GetYaxis()->SetRangeUser(0,10);
+// sliced_sigmas_fifth_e->DrawClone();
+// new TCanvas();
+TH1* sliced_means_fifth_e = ((TH1*) f_out->Get("th2_fifth_e_1"));
+sliced_means_fifth_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
+// sliced_means_fifth_e->DrawClone();
 
-sliced_means_first_e->SetLineColor(1);
-sliced_sigmas_first_e->SetLineColor(1);
-sliced_means_second_e->SetLineColor(2);
-sliced_sigmas_second_e->SetLineColor(2);
-sliced_means_third_e->SetLineColor(3);
-sliced_sigmas_third_e->SetLineColor(3);
-sliced_means_fourth_e->SetLineColor(4);
-sliced_sigmas_fourth_e->SetLineColor(4);
+th2_sixth_e->FitSlicesY(0,1,-1,0,fit_opt);
+// new TCanvas();
+TH1* sliced_sigmas_sixth_e = ((TH1*) f_out->Get("th2_sixth_e_2"));
+sliced_sigmas_sixth_e->GetYaxis()->SetRangeUser(0,10);
+// sliced_sigmas_sixth_e->DrawClone();
+// new TCanvas();
+TH1* sliced_means_sixth_e = ((TH1*) f_out->Get("th2_sixth_e_1"));
+sliced_means_sixth_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
+// sliced_means_sixth_e->DrawClone();
 
-sliced_means_first_e->SetMarkerColor(1);
-sliced_sigmas_first_e->SetMarkerColor(1);
-sliced_means_second_e->SetMarkerColor(2);
-sliced_sigmas_second_e->SetMarkerColor(2);
-sliced_means_third_e->SetMarkerColor(3);
-sliced_sigmas_third_e->SetMarkerColor(3);
-sliced_means_fourth_e->SetMarkerColor(4);
-sliced_sigmas_fourth_e->SetMarkerColor(4);
+
+sliced_means_first_e->SetLineColor(mcol(1-1));
+sliced_sigmas_first_e->SetLineColor(mcol(1-1));
+sliced_means_second_e->SetLineColor(mcol(2-1));
+sliced_sigmas_second_e->SetLineColor(mcol(2-1));
+sliced_means_third_e->SetLineColor(mcol(3-1));
+sliced_sigmas_third_e->SetLineColor(mcol(3-1));
+sliced_means_fourth_e->SetLineColor(mcol(4-1));
+sliced_sigmas_fourth_e->SetLineColor(mcol(4-1));
+sliced_means_fifth_e->SetLineColor(mcol(5-1));
+sliced_sigmas_fifth_e->SetLineColor(mcol(5-1));
+sliced_means_sixth_e->SetLineColor(mcol(6-1));
+sliced_sigmas_sixth_e->SetLineColor(mcol(6-1));
+
+sliced_means_first_e->SetMarkerColor(mcol(1-1));
+sliced_sigmas_first_e->SetMarkerColor(mcol(1-1));
+sliced_means_second_e->SetMarkerColor(mcol(2-1));
+sliced_sigmas_second_e->SetMarkerColor(mcol(2-1));
+sliced_means_third_e->SetMarkerColor(mcol(3-1));
+sliced_sigmas_third_e->SetMarkerColor(mcol(3-1));
+sliced_means_fourth_e->SetMarkerColor(mcol(4-1));
+sliced_sigmas_fourth_e->SetMarkerColor(mcol(4-1));
+sliced_means_fifth_e->SetMarkerColor(mcol(5-1));
+sliced_sigmas_fifth_e->SetMarkerColor(mcol(5-1));
+sliced_means_sixth_e->SetMarkerColor(mcol(6-1));
+sliced_sigmas_sixth_e->SetMarkerColor(mcol(6-1));
 
 sliced_means_first_e->SetMarkerStyle(20+1);
 sliced_sigmas_first_e->SetMarkerStyle(20+1);
@@ -416,6 +475,10 @@ sliced_means_third_e->SetMarkerStyle(20+3);
 sliced_sigmas_third_e->SetMarkerStyle(20+3);
 sliced_means_fourth_e->SetMarkerStyle(20+4);
 sliced_sigmas_fourth_e->SetMarkerStyle(20+4);
+sliced_means_fifth_e->SetMarkerStyle(5);
+sliced_sigmas_fifth_e->SetMarkerStyle(5);
+sliced_means_sixth_e->SetMarkerStyle(6);
+sliced_sigmas_sixth_e->SetMarkerStyle(6);
 
 sliced_means_first_e->SetTitle("first electron");
 sliced_sigmas_first_e->SetTitle("first electron");
@@ -425,6 +488,10 @@ sliced_means_third_e->SetTitle("third electron");
 sliced_sigmas_third_e->SetTitle("third electron");
 sliced_means_fourth_e->SetTitle("fourth electron");
 sliced_sigmas_fourth_e->SetTitle("fourth electron");
+sliced_means_fifth_e->SetTitle("fifth electron");
+sliced_sigmas_fifth_e->SetTitle("fifth electron");
+sliced_means_sixth_e->SetTitle("sixth electron");
+sliced_sigmas_sixth_e->SetTitle("sixth electron");
 
 // sliced_means_first_e->SetLineColor(1);
 // sliced_sigmas_first_e->SetLineColor(1);
@@ -441,6 +508,8 @@ sliced_means_first_e->DrawClone();
 sliced_means_second_e->DrawClone("same");
 sliced_means_third_e->DrawClone("same");
 sliced_means_fourth_e->DrawClone("same");
+sliced_means_fifth_e->DrawClone("same");
+sliced_means_sixth_e->DrawClone("same");
 
 c_means_first_to_fourth->BuildLegend();
 
@@ -449,13 +518,15 @@ sliced_sigmas_first_e->DrawClone();
 sliced_sigmas_second_e->DrawClone("same");
 sliced_sigmas_third_e->DrawClone("same");
 sliced_sigmas_fourth_e->DrawClone("same");
+sliced_sigmas_fifth_e->DrawClone("same");
+sliced_sigmas_sixth_e->DrawClone("same");
 
 c_sigmas_first_to_fourth->BuildLegend();
 
 
 
 TCanvas* c_first_to_fourth = new TCanvas();
-c_first_to_fourth->Divide(2,2);
+c_first_to_fourth->Divide(3,2);
 c_first_to_fourth->cd(1);
 th2_first_e->Draw("colz");
 c_first_to_fourth->cd(2);
@@ -464,14 +535,21 @@ c_first_to_fourth->cd(3);
 th2_third_e->Draw("colz");
 c_first_to_fourth->cd(4);
 th2_fourth_e->Draw("colz");
+c_first_to_fourth->cd(5);
+th2_fifth_e->Draw("colz");
+c_first_to_fourth->cd(6);
+th2_sixth_e->Draw("colz");
 
 TCanvas* fish_cavas = new TCanvas();
 fish_cavas->Divide(3,2);
 // draw a fish
 for (Int_t i = 0; i < 6; ++i){
   fish_cavas->cd(i+1);
-  fish_tree->Draw(Form("(t_drift_b-t_drift_a):(t_drift_b+t_drift_a)>>fish%d(500,-200,300,200,-100,100)",i),
+  fish_tree->Draw(Form("(t_drift_b-t_drift_a):(t_drift_b+t_drift_a)>>fish%d(250,-200,300,200,-100,100)",i),
                   Form("t_drift_b <1000 && elno == %d",i),"colz");
+  TH2F* this_fish = (TH2F*) f_out->Get(Form("fish%d",i));
+  this_fish->SetMinimum(0);
+  this_fish->SetMaximum(30);
   
 }
 
