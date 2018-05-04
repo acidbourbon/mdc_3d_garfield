@@ -133,6 +133,66 @@ Float_t my_skew_norm(Float_t x, Float_t location, Float_t scale, Float_t shape){
   
 }
 
+TArrayF* fit_skewed(TH1* hist){
+  TArrayF* return_vals = new TArrayF(6);
+  
+  Float_t hist_mean = hist->GetMean();
+  
+  TF1 *fit  = new TF1 ("fit","[0]*skew_norm(x,[1],[2],[3])+0*[4]+0*[5]"
+                               ,hist_mean-20,hist_mean+20);
+  fit->SetParName(0,"const");
+  fit->SetParName(1,"location");
+  fit->SetParName(2,"scale");
+  fit->SetParName(3,"shape");
+  fit->SetParName(4,"mean");
+  fit->SetParName(5,"stddev");
+  fit->FixParameter(4,0);
+  fit->FixParameter(5,0);
+  
+  fit->SetParameter(1,hist_mean);
+  fit->SetParLimits(1,hist_mean-20,hist_mean+20);
+  fit->SetParameter(2,hist->GetStdDev());
+  fit->SetParLimits(2,hist->GetStdDev()/2,hist->GetStdDev()*2);
+  fit->FixParameter(3,2.2);
+  hist->Fit("fit","WW q");
+  fit->ReleaseParameter(3);
+  hist->Fit("fit","WW M q");
+  
+  
+  
+  
+  Float_t constant = fit->GetParameter(0);
+  Float_t location = fit->GetParameter(1);
+  Float_t scale = fit->GetParameter(2);
+  Float_t shape = fit->GetParameter(3);
+  
+  Float_t delta = shape/TMath::Sqrt(1+shape*shape);
+  Float_t fit_mean  = location + scale*delta*TMath::Sqrt(2/TMath::Pi());
+  Float_t fit_stddev = scale*TMath::Sqrt(1-2*delta*delta/TMath::Pi());
+  
+  
+  return_vals->SetAt(fit->GetParameter(0),0);
+  return_vals->SetAt(location,1);
+  return_vals->SetAt(scale,2);
+  return_vals->SetAt(shape,3);
+  
+  return_vals->SetAt(fit_mean,4);
+  return_vals->SetAt(fit_stddev,5);
+  
+  fit->FixParameter(0,constant);
+  fit->FixParameter(1,location);
+  fit->FixParameter(2,scale);
+  fit->FixParameter(3,shape);
+  
+  fit->FixParameter(4,fit_mean);
+  fit->FixParameter(5,fit_stddev);
+  
+  hist->Fit("fit","q");
+  
+  return return_vals;
+  
+}
+
 
 TObjArray* my_fit_slices_y(TH2F* hist, TF1* fit){
   
@@ -146,25 +206,26 @@ TObjArray* my_fit_slices_y(TH2F* hist, TF1* fit){
   
   for (Int_t i = 1; i<= hist->GetNbinsX(); ++i){
     TH1D *py = (TH1D*) hist->ProjectionY("py", i,i); // where firstXbin = 0 and lastXbin = 9
-  //   fit->SetParameter(0,py->GetBinContent(py->GetMaximumBin()) );
-  //   fit->SetParLimits(0,0,py->GetBinContent(py->GetMaximumBin())*2 );
-    fit->SetParameter(1,py->GetMean());
-    fit->SetParLimits(1,py->GetMean()-20,py->GetMean()+20);
-    fit->SetParameter(2,py->GetStdDev());
-    fit->SetParLimits(2,py->GetStdDev()/2,py->GetStdDev()*2);
-    fit->FixParameter(3,2.2);
-    py->Fit("fit","WW q");
-    fit->ReleaseParameter(3);
-    py->Fit("fit","WW M q");
-    
-    
-    Float_t location = fit->GetParameter(1);
-    Float_t scale = fit->GetParameter(2);
-    Float_t shape = fit->GetParameter(3);
-    
-    Float_t delta = shape/TMath::Sqrt(1+shape*shape);
-    Float_t fit_mean  = location + scale*delta*TMath::Sqrt(2/TMath::Pi());
-    Float_t fit_stddev = scale*TMath::Sqrt(1-2*delta*delta/TMath::Pi());
+//   //   fit->SetParameter(0,py->GetBinContent(py->GetMaximumBin()) );
+//   //   fit->SetParLimits(0,0,py->GetBinContent(py->GetMaximumBin())*2 );
+//     fit->SetParameter(1,py->GetMean());
+//     fit->SetParLimits(1,py->GetMean()-20,py->GetMean()+20);
+//     fit->SetParameter(2,py->GetStdDev());
+//     fit->SetParLimits(2,py->GetStdDev()/2,py->GetStdDev()*2);
+//     fit->FixParameter(3,2.2);
+//     py->Fit("fit","WW q");
+//     fit->ReleaseParameter(3);
+//     py->Fit("fit","WW M q");
+//     
+//     
+//     Float_t location = fit->GetParameter(1);
+//     Float_t scale = fit->GetParameter(2);
+//     Float_t shape = fit->GetParameter(3);
+//     
+//     Float_t delta = shape/TMath::Sqrt(1+shape*shape);
+//     Float_t fit_mean  = location + scale*delta*TMath::Sqrt(2/TMath::Pi());
+//     Float_t fit_stddev = scale*TMath::Sqrt(1-2*delta*delta/TMath::Pi());
+    TArrayF* parms=fit_skewed(py);
     
     means->SetBinContent(i,py->GetMean());
 //     means->SetBinError(i,fit->GetParError(1));
@@ -173,9 +234,9 @@ TObjArray* my_fit_slices_y(TH2F* hist, TF1* fit){
     stddevs->SetBinContent(i,py->GetStdDev());
 //     stddevs->SetBinError(i,fit->GetParError(2));
     
-    fit_means->SetBinContent(i,fit_mean);
+    fit_means->SetBinContent(i,parms->GetAt(4));
     fit_means->SetBinError(i,0);
-    fit_stddevs->SetBinContent(i,fit_stddev);
+    fit_stddevs->SetBinContent(i,parms->GetAt(5));
     fit_stddevs->SetBinError(i,0);
   }
   
@@ -245,11 +306,12 @@ void ascii_to_ttree_fish(TString infile) {
   Int_t nth_electron = 0;
   Int_t elno_max = 20;
   
-  gStyle->SetOptFit();
+  gStyle->SetOptFit(0211);
   
   gRandom->SetSeed(0);
   
   Float_t t1_noise=from_env_float("t1_noise","0");
+  Float_t bootstrap_factor=from_env_float("bootstrap_factor","1");
   
   TFile* f_out = new TFile("f_out.root","RECREATE");
   
@@ -396,6 +458,12 @@ void ascii_to_ttree_fish(TString infile) {
   
 //   Float_t weight = 1./((Float_t) samples ); // somehow I need that factor, so the convolution preserves the absolute Y values, because electron signals are no dirac peaks
   
+  
+  
+  
+  TTree* fish_tree = new TTree("fish_tree","fish_tree");
+for(Int_t bs = 0; bs < bootstrap_factor; ++bs){
+  
   Float_t t_drift;
   Float_t t_drift_first;
   Float_t t_drift_second;
@@ -417,7 +485,6 @@ void ascii_to_ttree_fish(TString infile) {
   Float_t t_drift_a = 1000;
   Float_t t_drift_b = 1000;
   Int_t   elno = 0;
-  TTree* fish_tree = new TTree("fish_tree","fish_tree");
   fish_tree->Branch("t_drift_a",&t_drift_a);
   fish_tree->Branch("t_drift_b",&t_drift_b);
   fish_tree->Branch("elno",&elno);
@@ -516,6 +583,8 @@ void ascii_to_ttree_fish(TString infile) {
     last_n = n;
     last_y = y;
   }
+  
+}
 //   pulse_mem->Write();
 
 // new TCanvas();
@@ -697,13 +766,13 @@ f_out->cd();
 
 
 TCanvas* c_means_first_to_fourth = new TCanvas();
-mg_t1_comp->DrawClone("APL");
-sliced_means_first_e->DrawClone("same P");
-sliced_means_second_e->DrawClone("same P");
-sliced_means_third_e->DrawClone("same P");
-sliced_means_fourth_e->DrawClone("same P");
-sliced_means_fifth_e->DrawClone("same P");
-sliced_means_sixth_e->DrawClone("same P");
+mg_t1_comp->DrawClone("AP");
+sliced_means_first_e->DrawClone("same L");
+sliced_means_second_e->DrawClone("same L");
+sliced_means_third_e->DrawClone("same L");
+sliced_means_fourth_e->DrawClone("same L");
+sliced_means_fifth_e->DrawClone("same L");
+sliced_means_sixth_e->DrawClone("same L");
 
 c_means_first_to_fourth->BuildLegend();
 
@@ -714,13 +783,13 @@ TMultiGraph* mg_sigma_comp = (TMultiGraph*) tf_sigma_comp->Get("multigraph");
 f_out->cd();
 
 TCanvas* c_sigmas_first_to_fourth = new TCanvas();
-mg_sigma_comp->DrawClone("APL");
-sliced_sigmas_first_e->DrawClone("same P");
-sliced_sigmas_second_e->DrawClone("same P");
-sliced_sigmas_third_e->DrawClone("same P");
-sliced_sigmas_fourth_e->DrawClone("same P");
-sliced_sigmas_fifth_e->DrawClone("same P");
-sliced_sigmas_sixth_e->DrawClone("same P");
+mg_sigma_comp->DrawClone("AP");
+sliced_sigmas_first_e->DrawClone("same L");
+sliced_sigmas_second_e->DrawClone("same L");
+sliced_sigmas_third_e->DrawClone("same L");
+sliced_sigmas_fourth_e->DrawClone("same L");
+sliced_sigmas_fifth_e->DrawClone("same L");
+sliced_sigmas_sixth_e->DrawClone("same L");
 
 c_sigmas_first_to_fourth->BuildLegend();
 
@@ -764,8 +833,8 @@ for (Int_t i = 0; i < 6; ++i){
                   Form("abs(t_drift_b - t_drift_a) < 5 && t_drift_b <1000 && elno == %d",i),"colz");
   TH1F* this_fish = (TH1F*) f_out->Get(Form("fish_proj%d",i));
   this_fish->GetXaxis()->SetRangeUser(-50,200);
-  this_fish->Fit("fit","WW q M");
-  
+//   this_fish->Fit("fit","WW q M");
+  fit_skewed(this_fish);  
 }
 
 
@@ -788,9 +857,9 @@ vw_canv->cd(1)->BuildLegend();
 
 vw_canv->cd(2);
 mg_sigma_comp->DrawClone("AP");
-sliced_sigmas_third_e->DrawClone("same P");
-sliced_sigmas_fourth_e->DrawClone("same P");
-sliced_sigmas_fifth_e->DrawClone("same P");
+sliced_sigmas_third_e->DrawClone("same L");
+sliced_sigmas_fourth_e->DrawClone("same L");
+sliced_sigmas_fifth_e->DrawClone("same L");
 vw_canv->cd(2)->BuildLegend();
 
 // th2_first_e_0->Draw(); // draw the first fit parameter (constant, in this case)
@@ -809,16 +878,18 @@ for (Int_t i = 10; i < 30; ++i){
   slice_fit_canvas->cd(slice_fit_canvas_pad++);
   TH1D *py = (TH1D*) th2_first_e->ProjectionY("py", i,i)->Clone(); // where firstXbin = 0 and lastXbin = 9
   py->Draw();
-//   fit->SetParameter(0,py->GetBinContent(py->GetMaximumBin()) );
-//   fit->SetParLimits(0,0,py->GetBinContent(py->GetMaximumBin())*2 );
-  fit->SetParameter(1,py->GetMean());
-  fit->SetParLimits(1,py->GetMean()-20,py->GetMean()+20);
-  fit->SetParameter(2,py->GetStdDev());
-  fit->SetParLimits(2,py->GetStdDev()/2,py->GetStdDev()*2);
-  fit->FixParameter(3,2.2);
-  py->Fit("fit","WW q");
-  fit->ReleaseParameter(3);
-  py->Fit("fit","WW q M");
+// //   fit->SetParameter(0,py->GetBinContent(py->GetMaximumBin()) );
+// //   fit->SetParLimits(0,0,py->GetBinContent(py->GetMaximumBin())*2 );
+//   fit->SetParameter(1,py->GetMean());
+//   fit->SetParLimits(1,py->GetMean()-20,py->GetMean()+20);
+//   fit->SetParameter(2,py->GetStdDev());
+//   fit->SetParLimits(2,py->GetStdDev()/2,py->GetStdDev()*2);
+//   fit->FixParameter(3,2.2);
+//   py->Fit("fit","WW q");
+//   fit->ReleaseParameter(3);
+//   py->Fit("fit","WW q M");
+  TArrayF* parms= fit_skewed(py);
+  py->GetXaxis()->SetRangeUser(parms->GetAt(4)-20,parms->GetAt(4)+20);
   
 }
 
