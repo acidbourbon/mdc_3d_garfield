@@ -187,15 +187,20 @@ fi
 if [ $drift_MIPS_track == "true" ]; then 
 root_drift_times=true
 
-x=0.1
-y=0.1
+x=0.0
+y=-0.15
 halflength=0.4
 n=3
 
 for i in $(seq 1 $n); do
 cat <<EOF >>$temp
 
-area -0.40 -0.40 -0.40 0.40 0.40 0.40 view x=0 3d
+*area -0.40 -0.40 -0.40 0.40 0.40 0.40 view x=0 3d
+// View innermost cube
+area -0.4 -0.4 -0.4 0.4 0.4 0.4 ...
+   nooutline ...
+    light -20 -40 ...
+    view -3*x+5*y-1*z=0 3d
 track $x $y -$halflength  $x $y $halflength HEED proton energy 1.93 GeV
 INTEGRATION-PARAMETERS  MONTE-CARLO-COLLISIONS 500
 DRIFT TRACK MONTE-CARLO-DRIFT LINE-PRINT
