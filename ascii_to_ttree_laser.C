@@ -484,7 +484,7 @@ Int_t graphno = 0;
 
 Int_t elno_increment = 1;
 for(Int_t my_elno = 0; my_elno <= elno_max; my_elno+=elno_increment){
-  if(my_elno >= 10){
+  if(my_elno >= 20){
     elno_increment = 5;
   }
   graphno++;

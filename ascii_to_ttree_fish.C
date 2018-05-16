@@ -69,6 +69,42 @@ void hist_to_tarrayf(TH1* hist, TArrayF* xarr, TArrayF* yarr){
   
 }
 
+TH1F* gaus_conv(TH1F* hist,Float_t sigma){
+  
+  Float_t range = 5*sigma;
+  
+  TF1* my_gaus = new TF1("my_gaus", "gaus",-range,+range);
+  
+  TH1F* conv_hist = (TH1F*) hist->Clone();
+  conv_hist->SetName(Form("%s_conv_gaus_%3.2f",hist->GetName(),sigma));
+  conv_hist->SetTitle(Form("%s_conv_gaus_%3.2f",hist->GetName(),sigma));
+  
+  my_gaus->SetParameter(0,1/(TMath::Sqrt(TMath::TwoPi())*sigma) );
+  my_gaus->SetParameter(1,0);
+  my_gaus->SetParameter(2,sigma);
+  
+  Float_t weight = (conv_hist->GetXaxis()->GetXmax() - conv_hist->GetXaxis()->GetXmin())/((Float_t) conv_hist->GetNbinsX());
+  
+  for (Int_t i =1; i<=conv_hist->GetNbinsX();++i){
+    Float_t xpos = conv_hist->GetBinCenter(i);
+    conv_hist->SetBinContent(i,0);
+    
+    for (Int_t j=1; j<=hist->GetNbinsX();++j){
+      Float_t xpos_ = hist->GetBinCenter(j);
+      Float_t rel_x = xpos_ -xpos;
+      if( abs(rel_x)<range){
+        conv_hist->SetBinContent(i,conv_hist->GetBinContent(i)+
+                                 weight * hist->GetBinContent(j)*my_gaus->Eval(rel_x) );
+      }
+    }
+//     conv_hist->SetBinError(i,0);
+    
+  }
+  
+  return conv_hist;
+  
+}
+
 TH1* fftconvolve(TH1D* h1, TH1D* h2){
   
   
@@ -194,7 +230,7 @@ TArrayF* fit_skewed(TH1* hist){
 }
 
 
-TObjArray* my_fit_slices_y(TH2F* hist, TF1* fit){
+TObjArray* my_fit_slices_y(TH2F* hist, Float_t t1_noise){
   
   TObjArray* return_objects = new TObjArray();
   TH1F* means = new TH1F(Form("%s%s",hist->GetName(),"_mean"),Form("%s%s",hist->GetName(),"_mean"),hist->GetNbinsX(),hist->GetXaxis()->GetXmin(),hist->GetXaxis()->GetXmax());
@@ -205,7 +241,10 @@ TObjArray* my_fit_slices_y(TH2F* hist, TF1* fit){
   
   
   for (Int_t i = 1; i<= hist->GetNbinsX(); ++i){
-    TH1D *py = (TH1D*) hist->ProjectionY("py", i,i); // where firstXbin = 0 and lastXbin = 9
+    TH1F *py = (TH1F*) hist->ProjectionY("py", i,i); // where firstXbin = 0 and lastXbin = 9
+    if(t1_noise > 0){
+      py = gaus_conv(py,t1_noise);
+    }
 //   //   fit->SetParameter(0,py->GetBinContent(py->GetMaximumBin()) );
 //   //   fit->SetParLimits(0,0,py->GetBinContent(py->GetMaximumBin())*2 );
 //     fit->SetParameter(1,py->GetMean());
@@ -246,6 +285,22 @@ TObjArray* my_fit_slices_y(TH2F* hist, TF1* fit){
 }
 
 
+
+
+//                   _          __                  _   _             
+//                  (_)        / _|                | | (_)            
+//   _ __ ___   __ _ _ _ __   | |_ _   _ _ __   ___| |_ _  ___  _ __  
+//  | '_ ` _ \ / _` | | '_ \  |  _| | | | '_ \ / __| __| |/ _ \| '_ \ 
+//  | | | | | | (_| | | | | | | | | |_| | | | | (__| |_| | (_) | | | |
+//  |_| |_| |_|\__,_|_|_| |_| |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|
+//                                                                    
+//                                                                    
+
+
+
+
+
+
 void ascii_to_ttree_fish(TString infile) {
   
   
@@ -264,40 +319,6 @@ void ascii_to_ttree_fish(TString infile) {
     x_shift         = 0;
   }    
   
-//  TF1 *fit  = new TF1 ("fit",
-//                                Form("[0]*TMath::Gaus(x,[1],[2])+%f*[0]*TMath::Gaus(x,[1]+%f*[2],%f*[2])",backgnd_scale_0, backgnd_shift_1, backgnd_scale_2)
-// //                                ,-100,+200);
-//         fit->SetParameter(1,20);
-//         fit->SetParameter(2,3);
-//         fit->SetParLimits(1,0,60);
-//         fit->SetParLimits(2,0.8,8);
-//         
-//   TF1 *fit  = new TF1 ("fit","[0]*TMath::Gaus( (x-[1]) - TMath::Exp(-(-1+[3]*(x-[1]))),0,[2])"
-//                                ,-100,+200);
-//         fit->SetParLimits(0,0,1000);
-//         fit->SetParLimits(1,0,100);
-//         fit->SetParLimits(2,0.2,100);
-//         fit->SetParLimits(3,0.001,1);
-//         fit->SetParameter(0,100);
-//         fit->SetParameter(1,10);
-//         fit->SetParameter(2,1);
-//         fit->SetParameter(3,0.01);
-
-  TF1 *fit  = new TF1 ("fit","[0]*skew_norm(x,[1],[2],[3])"
-                               ,-100,+200);
-//         fit->SetParLimits(0,0,1000);
-        fit->SetParLimits(1,0,100);
-        fit->SetParLimits(2,0.2,100);
-        fit->SetParLimits(3,0.001,10);
-//         fit->SetParameter(0,100);
-//         fit->SetParameter(1,10);
-//         fit->SetParameter(2,1);
-//         fit->SetParameter(3,0.01);
-  
-  // gaus fit
-//   fit = new TF1("fit","[0]*TMath::Gaus(x,[1],[2])");
-  
-  
   
   
   Bool_t draw_pulses = true;
@@ -307,10 +328,24 @@ void ascii_to_ttree_fish(TString infile) {
   Int_t elno_max = 20;
   
   gStyle->SetOptFit(0211);
+//   gStyle->SetLineWidth(2);
   
   gRandom->SetSeed(0);
   
   Float_t t1_noise=from_env_float("t1_noise","0");
+  
+  TString t1_noise_method=from_env("t1_noise_method","random");
+  Bool_t add_noise = false;
+  if (t1_noise_method == "random")
+    add_noise = true;
+  if (t1_noise  == 0)
+    add_noise = false;
+  
+  Float_t t1_scaler=from_env_float("t1_scaler","1");
+  
+  
+//   Float_t t1_noise=from_env_float("t1_noise_method","random");
+  
   Float_t bootstrap_factor=from_env_float("bootstrap_factor","1");
   
   TFile* f_out = new TFile("f_out.root","RECREATE");
@@ -503,9 +538,9 @@ for(Int_t bs = 0; bs < bootstrap_factor; ++bs){
     }
     
     if (wire == 1){
-      t_drift_a_vec.push_back(t_drift*1000);
+      t_drift_a_vec.push_back(t_drift*t1_scaler*1000);
     } else if (wire == 2){
-      t_drift_b_vec.push_back(t_drift*1000);
+      t_drift_b_vec.push_back(t_drift*t1_scaler*1000);
     }
     
     
@@ -528,31 +563,31 @@ for(Int_t bs = 0; bs < bootstrap_factor; ++bs){
       
       for(elno = 0; elno < elno_max; ++elno){
         if(t_drift_a_vec.size() > elno){
-          t_drift_a = t_drift_a_vec[elno] + gRandom->Gaus(0,t1_noise);
+          t_drift_a = t_drift_a_vec[elno] + ((add_noise)?gRandom->Gaus(0,t1_noise):0);
         }
         if(t_drift_b_vec.size() > elno){
-          t_drift_b = t_drift_b_vec[elno] + gRandom->Gaus(0,t1_noise);
+          t_drift_b = t_drift_b_vec[elno] + ((add_noise)?gRandom->Gaus(0,t1_noise):0);
         }
         fish_tree->Fill();
       }
       
       if(t_drift_a_vec.size() > 0){
-        th2_first_e->Fill(last_y*10.,t_drift_a_vec[0] + gRandom->Gaus(0,t1_noise));
+        th2_first_e->Fill(last_y*10.,t_drift_a_vec[0] + ((add_noise)?gRandom->Gaus(0,t1_noise):0));
       }
       if(t_drift_a_vec.size() > 1){
-        th2_second_e->Fill(last_y*10.,t_drift_a_vec[1] + gRandom->Gaus(0,t1_noise));
+        th2_second_e->Fill(last_y*10.,t_drift_a_vec[1] + ((add_noise)?gRandom->Gaus(0,t1_noise):0));
       }
       if(t_drift_a_vec.size() > 2){
-        th2_third_e->Fill(last_y*10.,t_drift_a_vec[2] + gRandom->Gaus(0,t1_noise));
+        th2_third_e->Fill(last_y*10.,t_drift_a_vec[2] + ((add_noise)?gRandom->Gaus(0,t1_noise):0));
       }
       if(t_drift_a_vec.size() > 3){
-        th2_fourth_e->Fill(last_y*10.,t_drift_a_vec[3] + gRandom->Gaus(0,t1_noise));
+        th2_fourth_e->Fill(last_y*10.,t_drift_a_vec[3] + ((add_noise)?gRandom->Gaus(0,t1_noise):0));
       }
       if(t_drift_a_vec.size() > 4){
-        th2_fifth_e->Fill(last_y*10.,t_drift_a_vec[4] + gRandom->Gaus(0,t1_noise));
+        th2_fifth_e->Fill(last_y*10.,t_drift_a_vec[4] + ((add_noise)?gRandom->Gaus(0,t1_noise):0));
       }
       if(t_drift_a_vec.size() > 5){
-        th2_sixth_e->Fill(last_y*10.,t_drift_a_vec[5] + gRandom->Gaus(0,t1_noise));
+        th2_sixth_e->Fill(last_y*10.,t_drift_a_vec[5] + ((add_noise)?gRandom->Gaus(0,t1_noise):0));
       }
       
       
@@ -661,67 +696,75 @@ sliced_means_sixth_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 
 */
 
-TObjArray* first_e_fit_results = my_fit_slices_y(th2_first_e, fit);
+Float_t t1_conv_noise = 0;
+if(t1_noise_method == "conv"){
+  t1_conv_noise = t1_noise;
+}
+
+TObjArray* first_e_fit_results = my_fit_slices_y(th2_first_e,t1_conv_noise);
 TH1F* sliced_means_first_e = (TH1F*) first_e_fit_results->At(0);
 TH1F* sliced_sigmas_first_e = (TH1F*) first_e_fit_results->At(1);
 sliced_sigmas_first_e->GetYaxis()->SetRangeUser(0,10);
 sliced_means_first_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 
-TObjArray* second_e_fit_results = my_fit_slices_y(th2_second_e, fit);
+TObjArray* second_e_fit_results = my_fit_slices_y(th2_second_e,t1_conv_noise);
 TH1F* sliced_means_second_e = (TH1F*) second_e_fit_results->At(0);
 TH1F* sliced_sigmas_second_e = (TH1F*) second_e_fit_results->At(1);
 sliced_sigmas_second_e->GetYaxis()->SetRangeUser(0,10);
 sliced_means_second_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 
-TObjArray* third_e_fit_results = my_fit_slices_y(th2_third_e, fit);
+TObjArray* third_e_fit_results = my_fit_slices_y(th2_third_e,t1_conv_noise);
 TH1F* sliced_means_third_e = (TH1F*) third_e_fit_results->At(0);
 TH1F* sliced_sigmas_third_e = (TH1F*) third_e_fit_results->At(1);
 sliced_sigmas_third_e->GetYaxis()->SetRangeUser(0,10);
 sliced_means_third_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 
-TObjArray* fourth_e_fit_results = my_fit_slices_y(th2_fourth_e, fit);
+TObjArray* fourth_e_fit_results = my_fit_slices_y(th2_fourth_e,t1_conv_noise);
 TH1F* sliced_means_fourth_e = (TH1F*) fourth_e_fit_results->At(0);
 TH1F* sliced_sigmas_fourth_e = (TH1F*) fourth_e_fit_results->At(1);
 sliced_sigmas_fourth_e->GetYaxis()->SetRangeUser(0,10);
 sliced_means_fourth_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 
-TObjArray* fifth_e_fit_results = my_fit_slices_y(th2_fifth_e, fit);
+TObjArray* fifth_e_fit_results = my_fit_slices_y(th2_fifth_e,t1_conv_noise);
 TH1F* sliced_means_fifth_e = (TH1F*) fifth_e_fit_results->At(0);
 TH1F* sliced_sigmas_fifth_e = (TH1F*) fifth_e_fit_results->At(1);
 sliced_sigmas_fifth_e->GetYaxis()->SetRangeUser(0,10);
 sliced_means_fifth_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 
-TObjArray* sixth_e_fit_results = my_fit_slices_y(th2_sixth_e, fit);
+TObjArray* sixth_e_fit_results = my_fit_slices_y(th2_sixth_e,t1_conv_noise);
 TH1F* sliced_means_sixth_e = (TH1F*) sixth_e_fit_results->At(0);
 TH1F* sliced_sigmas_sixth_e = (TH1F*) sixth_e_fit_results->At(1);
 sliced_sigmas_sixth_e->GetYaxis()->SetRangeUser(0,10);
 sliced_means_sixth_e->GetYaxis()->SetRangeUser(0,max_y_sliced_means);
 
-sliced_means_first_e->SetLineColor(mcol(1-1));
-sliced_sigmas_first_e->SetLineColor(mcol(1-1));
-sliced_means_second_e->SetLineColor(mcol(2-1));
-sliced_sigmas_second_e->SetLineColor(mcol(2-1));
-sliced_means_third_e->SetLineColor(mcol(3-1));
-sliced_sigmas_third_e->SetLineColor(mcol(3-1));
-sliced_means_fourth_e->SetLineColor(mcol(4-1));
-sliced_sigmas_fourth_e->SetLineColor(mcol(4-1));
-sliced_means_fifth_e->SetLineColor(mcol(5-1));
-sliced_sigmas_fifth_e->SetLineColor(mcol(5-1));
-sliced_means_sixth_e->SetLineColor(mcol(6-1));
-sliced_sigmas_sixth_e->SetLineColor(mcol(6-1));
 
-sliced_means_first_e->SetMarkerColor(mcol(1-1));
-sliced_sigmas_first_e->SetMarkerColor(mcol(1-1));
-sliced_means_second_e->SetMarkerColor(mcol(2-1));
-sliced_sigmas_second_e->SetMarkerColor(mcol(2-1));
-sliced_means_third_e->SetMarkerColor(mcol(3-1));
-sliced_sigmas_third_e->SetMarkerColor(mcol(3-1));
-sliced_means_fourth_e->SetMarkerColor(mcol(4-1));
-sliced_sigmas_fourth_e->SetMarkerColor(mcol(4-1));
-sliced_means_fifth_e->SetMarkerColor(mcol(5-1));
-sliced_sigmas_fifth_e->SetMarkerColor(mcol(5-1));
-sliced_means_sixth_e->SetMarkerColor(mcol(6-1));
-sliced_sigmas_sixth_e->SetMarkerColor(mcol(6-1));
+Int_t sim_col_offset = 0;
+
+sliced_means_first_e->SetLineColor(mcol(1+sim_col_offset));
+sliced_sigmas_first_e->SetLineColor(mcol(1+sim_col_offset));
+sliced_means_second_e->SetLineColor(mcol(2+sim_col_offset));
+sliced_sigmas_second_e->SetLineColor(mcol(2+sim_col_offset));
+sliced_means_third_e->SetLineColor(mcol(3+sim_col_offset));
+sliced_sigmas_third_e->SetLineColor(mcol(3+sim_col_offset));
+sliced_means_fourth_e->SetLineColor(mcol(4+sim_col_offset));
+sliced_sigmas_fourth_e->SetLineColor(mcol(4+sim_col_offset));
+sliced_means_fifth_e->SetLineColor(mcol(5+sim_col_offset));
+sliced_sigmas_fifth_e->SetLineColor(mcol(5+sim_col_offset));
+sliced_means_sixth_e->SetLineColor(mcol(6+sim_col_offset));
+sliced_sigmas_sixth_e->SetLineColor(mcol(6+sim_col_offset));
+
+sliced_means_first_e->SetMarkerColor(mcol(1+sim_col_offset));
+sliced_sigmas_first_e->SetMarkerColor(mcol(1+sim_col_offset));
+sliced_means_second_e->SetMarkerColor(mcol(2+sim_col_offset));
+sliced_sigmas_second_e->SetMarkerColor(mcol(2+sim_col_offset));
+sliced_means_third_e->SetMarkerColor(mcol(3+sim_col_offset));
+sliced_sigmas_third_e->SetMarkerColor(mcol(3+sim_col_offset));
+sliced_means_fourth_e->SetMarkerColor(mcol(4+sim_col_offset));
+sliced_sigmas_fourth_e->SetMarkerColor(mcol(4+sim_col_offset));
+sliced_means_fifth_e->SetMarkerColor(mcol(5+sim_col_offset));
+sliced_sigmas_fifth_e->SetMarkerColor(mcol(5+sim_col_offset));
+sliced_means_sixth_e->SetMarkerColor(mcol(6+sim_col_offset));
+sliced_sigmas_sixth_e->SetMarkerColor(mcol(6+sim_col_offset));
 
 sliced_means_first_e->SetMarkerStyle(20+1);
 sliced_sigmas_first_e->SetMarkerStyle(20+1);
@@ -736,6 +779,19 @@ sliced_sigmas_fifth_e->SetMarkerStyle(20+2);
 sliced_means_sixth_e->SetMarkerStyle(20+3);
 sliced_sigmas_sixth_e->SetMarkerStyle(20+3);
 
+sliced_means_first_e->SetLineWidth(2);
+sliced_sigmas_first_e->SetLineWidth(2);
+sliced_means_second_e->SetLineWidth(2);
+sliced_sigmas_second_e->SetLineWidth(2);
+sliced_means_third_e->SetLineWidth(2);
+sliced_sigmas_third_e->SetLineWidth(2);
+sliced_means_fourth_e->SetLineWidth(2);
+sliced_sigmas_fourth_e->SetLineWidth(2);
+sliced_means_fifth_e->SetLineWidth(2);
+sliced_sigmas_fifth_e->SetLineWidth(2);
+sliced_means_sixth_e->SetLineWidth(2);
+sliced_sigmas_sixth_e->SetLineWidth(2);
+
 sliced_means_first_e->SetTitle("first electron");
 sliced_sigmas_first_e->SetTitle("first electron");
 sliced_means_second_e->SetTitle("second electron");
@@ -748,6 +804,9 @@ sliced_means_fifth_e->SetTitle("fifth electron");
 sliced_sigmas_fifth_e->SetTitle("fifth electron");
 sliced_means_sixth_e->SetTitle("sixth electron");
 sliced_sigmas_sixth_e->SetTitle("sixth electron");
+
+
+
 
 // sliced_means_first_e->SetLineColor(1);
 // sliced_sigmas_first_e->SetLineColor(1);
@@ -765,9 +824,10 @@ TMultiGraph* mg_t1_comp = (TMultiGraph*) tf_t1_comp->Get("multigraph");
 f_out->cd();
 
 
+
 TCanvas* c_means_first_to_fourth = new TCanvas();
-mg_t1_comp->DrawClone("AP");
-sliced_means_first_e->DrawClone("same L");
+// mg_t1_comp->DrawClone("AP");
+sliced_means_first_e->DrawClone("L");
 sliced_means_second_e->DrawClone("same L");
 sliced_means_third_e->DrawClone("same L");
 sliced_means_fourth_e->DrawClone("same L");
@@ -783,8 +843,12 @@ TMultiGraph* mg_sigma_comp = (TMultiGraph*) tf_sigma_comp->Get("multigraph");
 f_out->cd();
 
 TCanvas* c_sigmas_first_to_fourth = new TCanvas();
-mg_sigma_comp->DrawClone("AP");
-sliced_sigmas_first_e->DrawClone("same L");
+// TH1F* dummy_sigmas = new TH1F("dummy_sigmas","dummy_sigmas",100,-3,3);
+// dummy_sigmas->SetMaximum(10);
+// dummy_sigmas->SetMinimum(0);
+// dummy_sigmas->Draw();
+// mg_sigma_comp->DrawClone("AP");
+sliced_sigmas_first_e->DrawClone("L");
 sliced_sigmas_second_e->DrawClone("same L");
 sliced_sigmas_third_e->DrawClone("same L");
 sliced_sigmas_fourth_e->DrawClone("same L");
@@ -832,6 +896,9 @@ for (Int_t i = 0; i < 6; ++i){
   fish_tree->Draw(Form("(t_drift_b+t_drift_a)>>fish_proj%d(250,-200,300,200,-100,100)",i),
                   Form("abs(t_drift_b - t_drift_a) < 5 && t_drift_b <1000 && elno == %d",i),"colz");
   TH1F* this_fish = (TH1F*) f_out->Get(Form("fish_proj%d",i));
+  if(t1_noise_method == "conv" && t1_noise > 0){
+    this_fish = gaus_conv(this_fish,t1_noise);
+  }
   this_fish->GetXaxis()->SetRangeUser(-50,200);
 //   this_fish->Fit("fit","WW q M");
   fit_skewed(this_fish);  
@@ -843,10 +910,11 @@ TCanvas* vw_canv = new TCanvas("vw_canv","vw_canv",1600,700);
 vw_canv->Divide(2,1);
 vw_canv->cd(1);
 
-mg_t1_comp->DrawClone("APL");
-sliced_means_third_e->DrawClone("same P");
-sliced_means_fourth_e->DrawClone("same P");
-sliced_means_fifth_e->DrawClone("same P");
+mg_t1_comp->DrawClone("AP");
+// sliced_means_second_e->DrawClone("same L");
+sliced_means_third_e->DrawClone("same L");
+sliced_means_fourth_e->DrawClone("same L");
+sliced_means_fifth_e->DrawClone("same L");
 // TH1F* fourth_scaled = (TH1F*) sliced_means_fourth_e->Clone();
 // fourth_scaled->Scale(0.9);
 // for (Int_t i = 1; i < fourth_scaled->GetNbinsX(); ++i){
@@ -857,6 +925,7 @@ vw_canv->cd(1)->BuildLegend();
 
 vw_canv->cd(2);
 mg_sigma_comp->DrawClone("AP");
+// sliced_sigmas_second_e->DrawClone("same L");
 sliced_sigmas_third_e->DrawClone("same L");
 sliced_sigmas_fourth_e->DrawClone("same L");
 sliced_sigmas_fifth_e->DrawClone("same L");
@@ -876,8 +945,14 @@ slice_fit_canvas->Divide(4,5);
 Int_t slice_fit_canvas_pad=1;
 for (Int_t i = 10; i < 30; ++i){
   slice_fit_canvas->cd(slice_fit_canvas_pad++);
-  TH1D *py = (TH1D*) th2_first_e->ProjectionY("py", i,i)->Clone(); // where firstXbin = 0 and lastXbin = 9
+  TH1F *py = (TH1F*) th2_fourth_e->ProjectionY("py", i,i)->Clone(); // where firstXbin = 0 and lastXbin = 9
+  
+  if(t1_noise_method == "conv" && t1_noise > 0){
+    py = gaus_conv(py,t1_noise);
+  }
+  
   py->Draw();
+  
 // //   fit->SetParameter(0,py->GetBinContent(py->GetMaximumBin()) );
 // //   fit->SetParLimits(0,0,py->GetBinContent(py->GetMaximumBin())*2 );
 //   fit->SetParameter(1,py->GetMean());

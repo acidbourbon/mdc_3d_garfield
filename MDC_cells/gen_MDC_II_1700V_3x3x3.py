@@ -78,28 +78,28 @@ for y in np.arange(0,sim_vol_ysize/2.,ypitch*2) :
       y_bar = y+ypitch
     print "wire  centre {:} {:} {:} ...".format(x,y_bar,z)
     print "      direction 1 0 0 ..."
-    print "      radius {:} ... ".format(sense_wire_rad)
+    print "      radius {:} ... ".format(field_wire_rad)
     print "      half-length {:} ...".format(sim_vol_xsize/2.)
     print "      "+field_conductor+" ..."
     print "      voltage {:}".format(v_field)
     if (y_bar > 0):
       print "wire  centre {:} {:} {:} ...".format(x,-y_bar,z)
       print "      direction 1 0 0 ..."
-      print "      radius {:} ... ".format(sense_wire_rad)
+      print "      radius {:} ... ".format(field_wire_rad)
       print "      half-length {:} ...".format(sim_vol_xsize/2.)
       print "      "+field_conductor+" ..."
       print "      voltage {:}".format(v_field)
     if (z > 0):
       print "wire  centre {:} {:} {:} ...".format(x,y_bar,-z)
       print "      direction 1 0 0 ..."
-      print "      radius {:} ... ".format(sense_wire_rad)
+      print "      radius {:} ... ".format(field_wire_rad)
       print "      half-length {:} ...".format(sim_vol_xsize/2.)
       print "      "+field_conductor+" ..."
       print "      voltage {:}".format(v_field)
     if (y_bar > 0 and z > 0):
       print "wire  centre {:} {:} {:} ...".format(x,-y_bar,-z)
       print "      direction 1 0 0 ..."
-      print "      radius {:} ... ".format(sense_wire_rad)
+      print "      radius {:} ... ".format(field_wire_rad)
       print "      half-length {:} ...".format(sim_vol_xsize/2.)
       print "      "+field_conductor+" ..."
       print "      voltage {:}".format(v_field)
