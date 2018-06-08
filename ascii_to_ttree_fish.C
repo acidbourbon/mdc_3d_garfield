@@ -159,6 +159,9 @@ Float_t skew_norm(Float_t x, Float_t location, Float_t scale, Float_t shape){
   if(scale <0.001)
     scale=0.001;
   
+  if(shape <0.001)
+    shape=0.001;
+  
   boost::math::skew_normal_distribution<Float_t> dist(location,scale,shape);
   return boost::math::pdf(dist,x);
   
@@ -325,7 +328,7 @@ void ascii_to_ttree_fish(TString infile) {
   
   // for fish
   Int_t nth_electron = 0;
-  Int_t elno_max = 20;
+  Int_t elno_max = 6;
   
   gStyle->SetOptFit(0211);
 //   gStyle->SetLineWidth(2);
@@ -342,6 +345,7 @@ void ascii_to_ttree_fish(TString infile) {
     add_noise = false;
   
   Float_t t1_scaler=from_env_float("t1_scaler","1");
+  Int_t  primaries=from_env_int("primaries","0");
   
   
 //   Float_t t1_noise=from_env_float("t1_noise_method","random");
@@ -476,7 +480,7 @@ void ascii_to_ttree_fish(TString infile) {
   // process the garfield tracks
  */ 
   
-  Int_t y_pos_bins = 30;
+  Int_t y_pos_bins = 4*30;
   
   TH1D* th_esig = new TH1D("th_esig","th_esig;t(s)",samples,0,sample_width);
   TH1*  th_esig_cum = 0;
@@ -527,7 +531,9 @@ for(Int_t bs = 0; bs < bootstrap_factor; ++bs){
   std::vector<Float_t> t_drift_a_vec;
   std::vector<Float_t> t_drift_b_vec;
   
-  Int_t primaries = garfield_tree->GetEntries();
+  if( primaries == 0){
+    primaries = garfield_tree->GetEntries();
+  }
 //   primaries = 1;
   for (Int_t i = 0 ; i < primaries + 1; i++){
     
@@ -910,8 +916,10 @@ TCanvas* vw_canv = new TCanvas("vw_canv","vw_canv",1600,700);
 vw_canv->Divide(2,1);
 vw_canv->cd(1);
 
+mg_t1_comp->GetXaxis()->SetLimits(-2.6,2.6);
 mg_t1_comp->DrawClone("AP");
-// sliced_means_second_e->DrawClone("same L");
+sliced_means_first_e->DrawClone("same L");
+sliced_means_second_e->DrawClone("same L");
 sliced_means_third_e->DrawClone("same L");
 sliced_means_fourth_e->DrawClone("same L");
 sliced_means_fifth_e->DrawClone("same L");
@@ -924,8 +932,10 @@ sliced_means_fifth_e->DrawClone("same L");
 vw_canv->cd(1)->BuildLegend();
 
 vw_canv->cd(2);
+mg_sigma_comp->GetXaxis()->SetLimits(-2.6,2.6);
 mg_sigma_comp->DrawClone("AP");
-// sliced_sigmas_second_e->DrawClone("same L");
+sliced_sigmas_first_e->DrawClone("same L");
+sliced_sigmas_second_e->DrawClone("same L");
 sliced_sigmas_third_e->DrawClone("same L");
 sliced_sigmas_fourth_e->DrawClone("same L");
 sliced_sigmas_fifth_e->DrawClone("same L");
